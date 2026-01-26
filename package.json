@@ -1,0 +1,61 @@
+{
+  "type": "module",
+  "private": true,
+  "packageManager": "pnpm@10.28.1",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "prepare": "nuxt prepare",
+    "lint": "eslint .",
+    "typecheck": "nuxt typecheck",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
+  },
+  "dependencies": {
+    "@antfu/eslint-config": "catalog:dev",
+    "@iconify-json/carbon": "catalog:icons",
+    "@pinia/nuxt": "catalog:build",
+    "@types/pg": "catalog:dev",
+    "@unocss/nuxt": "catalog:build",
+    "@unocss/reset": "catalog:frontend",
+    "@vueuse/core": "catalog:frontend",
+    "@vueuse/nuxt": "catalog:build",
+    "argon2": "catalog:backend",
+    "dayjs-nuxt": "catalog:dev",
+    "drizzle-kit": "catalog:backend",
+    "drizzle-orm": "catalog:backend",
+    "echarts": "catalog:frontend",
+    "eslint": "catalog:dev",
+    "nuxt": "catalog:build",
+    "nuxt-echarts": "catalog:frontend",
+    "paseto": "catalog:backend",
+    "paseto-ts": "catalog:backend",
+    "pg": "catalog:backend",
+    "pinia": "catalog:frontend",
+    "postgres": "catalog:backend",
+    "typescript": "catalog:dev",
+    "unocss": "catalog:build",
+    "vue-draggable-plus": "catalog:frontend",
+    "vue-echarts": "catalog:frontend",
+    "vue-tsc": "catalog:dev",
+    "xlsx": "catalog:frontend",
+    "zod": "catalog:utils",
+    "@iconify-json/wi": "catalog:icons",
+    "@iconify-json/tabler": "catalog:icons"
+  },
+  "devDependencies": {
+    "@nuxt/eslint": "catalog:build",
+    "@nuxtjs/color-mode": "catalog:build",
+    "@unocss/eslint-config": "catalog:build",
+    "eslint-plugin-format": "catalog:dev",
+    "vue": "catalog:frontend"
+  },
+  "resolutions": {
+    "@nuxt/kit": "catalog:build",
+    "chokidar": "^5.0.0",
+    "nuxt": "catalog:build",
+    "semver": "^7.7.3",
+    "unplugin": "catalog:build",
+    "vite": "catalog:build"
+  }
+}

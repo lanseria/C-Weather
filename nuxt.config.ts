@@ -1,0 +1,75 @@
+import { appDescription } from './app/constants/index'
+
+export default defineNuxtConfig({
+  modules: [
+    '@vueuse/nuxt',
+    '@unocss/nuxt',
+    '@pinia/nuxt',
+    '@nuxtjs/color-mode',
+    '@nuxt/eslint',
+    'dayjs-nuxt',
+  ],
+
+  ssr: false,
+
+  app: {
+    head: {
+      link: [
+        { rel: 'icon', href: '/favicon.ico', sizes: 'any' },
+        { rel: 'icon', type: 'image/svg+xml', href: '/nuxt.svg' },
+        { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+      ],
+      meta: [
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { name: 'description', content: appDescription },
+        { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
+        { name: 'theme-color', media: '(prefers-color-scheme: light)', content: 'white' },
+        { name: 'theme-color', media: '(prefers-color-scheme: dark)', content: '#222222' },
+      ],
+    },
+  },
+
+  colorMode: {
+    classSuffix: '',
+  },
+
+  runtimeConfig: {
+    dbUrl: '', // can be overridden by NUXT_DB_URL environment variable
+    redis: {
+      host: '',
+      password: '',
+    },
+  },
+
+  experimental: {
+    // when using generate, payload js assets included in sw precache manifest
+    // but missing on offline, disabling extraction it until fixed
+    payloadExtraction: false,
+    renderJsonPayloads: true,
+    typedPages: true,
+  },
+
+  compatibilityDate: '2025-06-25',
+
+  nitro: {
+    esbuild: {
+      options: {
+        target: 'esnext',
+      },
+    },
+    experimental: {
+      database: true,
+      tasks: true,
+    },
+  },
+
+  eslint: {
+    config: {
+      standalone: false,
+      nuxt: {
+        sortConfigKeys: true,
+      },
+    },
+  },
+
+})
