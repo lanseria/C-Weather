@@ -2,16 +2,15 @@ import { z } from 'zod'
 
 export default defineMcpTool({
   name: 'get_weather',
-  description: '获取指定位置的实时天气数据，包括温度、湿度、空气质量等信息',
+  description: '获取指定经纬度的综合气象数据。返回数据包含：1. 实时天气(含温度、湿度、风速风向、AQI)；2. 未来24小时逐小时预报；3. 未来7天逐日预报(含温差、AQI均值)。',
   inputSchema: {
     lat: z.number().describe('纬度坐标'),
     lon: z.number().describe('经度坐标'),
   },
   handler: async ({ lat, lon }) => {
     try {
-      const weatherData = await $fetch('/api/weather', {
-        query: { lat, lon },
-      })
+      // 直接调用公共的 server utility，复用代理配置和数据处理逻辑
+      const weatherData = await fetchUpstreamWeather(lat, lon)
 
       return {
         content: [

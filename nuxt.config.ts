@@ -35,11 +35,7 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
-    dbUrl: '', // can be overridden by NUXT_DB_URL environment variable
-    redis: {
-      host: '',
-      password: '',
-    },
+    proxyUrl: '',
   },
 
   devServer: {

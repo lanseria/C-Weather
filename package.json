@@ -47,7 +47,8 @@
     "vue-tsc": "catalog:dev",
     "xlsx": "catalog:frontend",
     "zod": "catalog:utils",
-    "@nuxtjs/mcp-toolkit": "catalog:backend"
+    "@nuxtjs/mcp-toolkit": "catalog:backend",
+    "undici": "catalog:backend"
   },
   "resolutions": {
     "chokidar": "^5.0.0",

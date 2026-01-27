@@ -13,6 +13,7 @@ catalogs:
     paseto-ts: ^2.0.5
     pg: ^8.17.2
     postgres: ^3.4.8
+    undici: ^7.19.1
   build:
     '@nuxt/eslint': ^1.13.0
     '@nuxt/kit': ^4.3.0
