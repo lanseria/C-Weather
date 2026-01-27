@@ -5,7 +5,7 @@ export default defineEventHandler(async (event) => {
   if (!lat || !lon) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Latitude and Longitude are required',
+      statusText: 'Latitude and Longitude are required',
     })
   }
 
@@ -44,7 +44,7 @@ export default defineEventHandler(async (event) => {
     console.error('Weather API Error:', error)
     throw createError({
       statusCode: 502,
-      statusMessage: 'Failed to fetch weather data from upstream',
+      statusText: 'Failed to fetch weather data from upstream',
     })
   }
 })
