@@ -5,6 +5,7 @@ packages: []
 
 catalogs:
   backend:
+    '@nuxtjs/mcp-toolkit': ^0.6.2
     argon2: ^0.44.0
     drizzle-kit: ^0.31.8
     drizzle-orm: ^0.45.1

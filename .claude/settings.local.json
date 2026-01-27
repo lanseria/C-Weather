@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__nuxt-mcp-toolkit-remote__get-page",
+      "Bash(pnpm add:*)"
+    ]
+  }
+}

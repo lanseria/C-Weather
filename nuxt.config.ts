@@ -8,6 +8,7 @@ export default defineNuxtConfig({
     '@nuxtjs/color-mode',
     '@nuxt/eslint',
     'dayjs-nuxt',
+    '@nuxtjs/mcp-toolkit',
   ],
 
   ssr: false,
@@ -39,6 +40,10 @@ export default defineNuxtConfig({
       host: '',
       password: '',
     },
+  },
+
+  devServer: {
+    port: 3030,
   },
 
   experimental: {

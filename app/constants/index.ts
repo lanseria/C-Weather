@@ -1,2 +1,2 @@
-export const appName = 'C-Weather'
-export const appDescription = 'C-Weather'
+export const appName = '内容天气 | C-Weather'
+export const appDescription = '内容天气 | C-Weather'

@@ -46,7 +46,8 @@
     "vue-echarts": "catalog:frontend",
     "vue-tsc": "catalog:dev",
     "xlsx": "catalog:frontend",
-    "zod": "catalog:utils"
+    "zod": "catalog:utils",
+    "@nuxtjs/mcp-toolkit": "catalog:backend"
   },
   "resolutions": {
     "chokidar": "^5.0.0",
