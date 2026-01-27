@@ -1,0 +1,16 @@
+services:
+  app:
+    build: .
+    container_name: context_weather
+    env_file:
+      - .env.production
+    ports:
+      - '3030:3000'
+    restart: unless-stopped
+    networks:
+      - shared_app_net
+
+networks:
+  shared_app_net:
+    external: true
+    name: shared-db-network
