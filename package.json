@@ -18,6 +18,7 @@
     "@iconify-json/wi": "catalog:icons",
     "@nuxt/eslint": "catalog:build",
     "@nuxtjs/color-mode": "catalog:build",
+    "@nuxtjs/mcp-toolkit": "catalog:backend",
     "@pinia/nuxt": "catalog:build",
     "@types/pg": "catalog:dev",
     "@unocss/eslint-config": "catalog:build",
@@ -40,15 +41,14 @@
     "pinia": "catalog:frontend",
     "postgres": "catalog:backend",
     "typescript": "catalog:dev",
+    "undici": "catalog:backend",
     "unocss": "catalog:build",
     "vue": "catalog:frontend",
     "vue-draggable-plus": "catalog:frontend",
     "vue-echarts": "catalog:frontend",
     "vue-tsc": "catalog:dev",
     "xlsx": "catalog:frontend",
-    "zod": "catalog:utils",
-    "@nuxtjs/mcp-toolkit": "catalog:backend",
-    "undici": "catalog:backend"
+    "zod": "catalog:utils"
   },
   "resolutions": {
     "chokidar": "^5.0.0",

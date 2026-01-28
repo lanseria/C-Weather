@@ -12,12 +12,12 @@ const dailyData = computed(() => {
 
   return data.time.map((time, i) => ({
     time,
-    code: data.weather_code[i],
-    maxTemp: data.temperature_2m_max[i],
-    minTemp: data.temperature_2m_min[i],
-    windSpeed: data.wind_speed_10m_max[i],
-    gusts: data.wind_gusts_10m_max[i],
-    aqi: data.us_aqi_mean ? data.us_aqi_mean[i] : 0,
+    code: data.weather_code[i]!,
+    maxTemp: data.temperature_2m_max[i]!,
+    minTemp: data.temperature_2m_min[i]!,
+    windSpeed: data.wind_speed_10m_max[i]!,
+    gusts: data.wind_gusts_10m_max[i]!,
+    aqi: data.us_aqi_mean ? data.us_aqi_mean[i]! : 0,
   }))
 })
 </script>

@@ -1,4 +1,3 @@
-import type { WeatherData } from '~/types/weather'
 import { defineStore } from 'pinia'
 
 export const useWeatherStore = defineStore('weather', () => {

@@ -8,6 +8,7 @@ export default defineNuxtConfig({
     '@nuxtjs/color-mode',
     '@nuxt/eslint',
     'dayjs-nuxt',
+    'nuxt-echarts',
     '@nuxtjs/mcp-toolkit',
   ],
 
@@ -64,6 +65,19 @@ export default defineNuxtConfig({
     },
   },
 
+  echarts: {
+    renderer: ['canvas'],
+    charts: ['LineChart'],
+    components: [
+      'DataZoomComponent',
+      'GridComponent',
+      'LegendComponent',
+      'MarkPointComponent',
+      'MarkLineComponent',
+      'TitleComponent',
+      'TooltipComponent',
+    ],
+  },
   eslint: {
     config: {
       standalone: false,

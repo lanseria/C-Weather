@@ -68,5 +68,12 @@ export default defineConfig({
   safelist: [
     ...wiSafelist,
     'i-tabler-leaf',
+    // AQI 状态颜色白名单 (用于动态生成的 bg- 类名)
+    'bg-green-500',
+    'bg-yellow-500',
+    'bg-orange-500',
+    'bg-red-500',
+    'bg-purple-500',
+    'bg-red-900',
   ],
 })

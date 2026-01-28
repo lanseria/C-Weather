@@ -71,9 +71,73 @@ export function useWeatherUtils() {
       return { text: '重度污染', color: 'text-purple-500' }
     return { text: '严重污染', color: 'text-red-900' }
   }
+  /**
+   * 获取天气中文名称
+   */
+  const getWeatherName = (code: number) => {
+    const map: Record<number, string> = {
+      0: '晴',
+      1: '多云',
+      2: '多云',
+      3: '阴',
+      45: '雾',
+      48: '雾',
+      51: '毛毛雨',
+      53: '毛毛雨',
+      55: '毛毛雨',
+      61: '小雨',
+      63: '中雨',
+      65: '大雨',
+      66: '冻雨',
+      67: '冻雨',
+      71: '小雪',
+      73: '中雪',
+      75: '大雪',
+      77: '雪粒',
+      80: '阵雨',
+      81: '阵雨',
+      82: '阵雨',
+      85: '阵雪',
+      86: '阵雪',
+      95: '雷雨',
+      96: '雷雨伴冰雹',
+      99: '雷雨伴冰雹',
+    }
+    return map[code] || '未知'
+  }
 
+  /**
+   * km/h 转换为风力等级
+   */
+  const getWindLevel = (speed: number) => {
+    if (speed < 1)
+      return 0
+    if (speed < 6)
+      return 1
+    if (speed < 12)
+      return 2
+    if (speed < 20)
+      return 3
+    if (speed < 29)
+      return 4
+    if (speed < 39)
+      return 5
+    if (speed < 50)
+      return 6
+    if (speed < 62)
+      return 7
+    if (speed < 75)
+      return 8
+    if (speed < 89)
+      return 9
+    if (speed < 103)
+      return 10
+    return 11
+  }
   return {
     getWeatherIcon,
     getAQIDescription,
+    getWeatherName,
+    getWindLevel,
   }
 }
