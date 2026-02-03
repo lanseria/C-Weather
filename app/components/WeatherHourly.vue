@@ -220,7 +220,8 @@ const activeState = computed(() => {
           </div>
         </div>
 
-        <div class="flex flex-col items-center bottom-0 left-[28px] top-0 absolute">
+        <!-- 指示器位置：28px (半列宽) + 48px (左侧标签宽度) = 76px -->
+        <div class="flex flex-col items-center bottom-0 left-[76px] top-0 absolute">
           <div
             class="border-[3px] border-[#10b981] rounded-full bg-white h-3 w-3 shadow-sm transition-[top] duration-150 ease-out absolute z-10"
             :style="{ top: `${activeState.y! - 6}px` }"
@@ -238,101 +239,123 @@ const activeState = computed(() => {
         </div>
       </div>
 
-      <div
-        ref="containerRef"
-        class="hide-scrollbar h-full relative overflow-x-auto"
-      >
-        <div class="pb-4 flex flex-col relative" :style="{ width: `${totalContentWidth}px` }">
-          <div class="h-[176px] relative">
-            <div class="flex h-full w-full pointer-events-none left-0 top-0 absolute z-10">
-              <div
-                v-for="group in weatherGroups"
-                :key="group.id"
-                class="border-r border-gray-100/50 flex flex-col h-full items-center justify-end last:border-0 dark:border-gray-700/50"
-                :style="{ width: `${group.count * COLUMN_WIDTH}px` }"
-              >
-                <div class="mb-2 opacity-80 flex flex-col gap-1 items-center">
-                  <span class="text-[11px] text-gray-500 font-medium dark:text-gray-400">
-                    {{ getWeatherName(group.data.code) }}
-                  </span>
-                  <div :class="getWeatherIcon(group.data.code, 1)" class="text-xl text-gray-500 dark:text-gray-400" />
-                </div>
-              </div>
-            </div>
-
-            <svg
-              class="h-full w-full left-0 top-0 absolute z-20 overflow-visible"
-              :width="totalContentWidth"
-              :height="CHART_HEIGHT"
-            >
-              <defs>
-                <linearGradient id="tempGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="#10b981" stop-opacity="0.4" />
-                  <stop offset="100%" stop-color="#10b981" stop-opacity="0" />
-                </linearGradient>
-              </defs>
-              <path :d="chartData.areaPath" fill="url(#tempGradient)" />
-              <path
-                :d="chartData.linePath"
-                fill="none"
-                stroke="#10b981"
-                stroke-width="3"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
+      <!-- 布局外层容器 -->
+      <div class="flex h-full">
+        <!-- 左侧固定标签列 -->
+        <div class="text-[10px] text-gray-400 font-medium flex flex-shrink-0 flex-col w-[48px]">
+          <!-- 温度/趋势标签 - 对应 176px 高度的图表 -->
+          <div class="flex h-[176px] items-center justify-center">
+            <span>温度</span>
           </div>
+          <!-- 空气标签 - 对应 h-6 + mt-1 -->
+          <div class="mt-1 flex h-6 items-center justify-center">
+            <span>空气</span>
+          </div>
+          <!-- 风力标签 - 对应 h-6 + mt-2 -->
+          <div class="mt-2 flex h-6 items-center justify-center">
+            <span>风力</span>
+          </div>
+          <!-- 时间轴留白 - 对应底部时间区域 -->
+          <div class="flex-1" />
+        </div>
 
-          <div class="mt-1">
-            <div class="flex w-full">
-              <div
-                v-for="group in aqiGroups"
-                :key="group.id"
-                class="px-[1px] flex items-center justify-center"
-                :style="{ width: `${group.count * COLUMN_WIDTH}px` }"
-              >
+        <!-- 右侧滚动内容区 -->
+        <div
+          ref="containerRef"
+          class="hide-scrollbar flex-1 h-full relative overflow-x-auto"
+        >
+          <div class="pb-4 flex flex-col relative" :style="{ width: `${totalContentWidth}px` }">
+            <div class="h-[176px] relative">
+              <div class="flex h-full w-full pointer-events-none left-0 top-0 absolute z-10">
                 <div
-                  class="text-[10px] text-white font-bold rounded flex h-6 w-full transition-colors items-center justify-center relative overflow-hidden"
-                  :class="getAQIDescription(group.data.aqi).color.replace('text-', 'bg-')"
+                  v-for="group in weatherGroups"
+                  :key="group.id"
+                  class="border-r border-gray-100/50 flex flex-col h-full items-center justify-end last:border-0 dark:border-gray-700/50"
+                  :style="{ width: `${group.count * COLUMN_WIDTH}px` }"
                 >
-                  <span class="relative z-10 drop-shadow-sm">{{ group.data.aqi }}</span>
+                  <div class="mb-2 opacity-80 flex flex-col gap-1 items-center">
+                    <span class="text-[11px] text-gray-500 font-medium dark:text-gray-400">
+                      {{ getWeatherName(group.data.code) }}
+                    </span>
+                    <div :class="getWeatherIcon(group.data.code, 1)" class="text-xl text-gray-500 dark:text-gray-400" />
+                  </div>
                 </div>
               </div>
+
+              <svg
+                class="h-full w-full left-0 top-0 absolute z-20 overflow-visible"
+                :width="totalContentWidth"
+                :height="CHART_HEIGHT"
+              >
+                <defs>
+                  <linearGradient id="tempGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#10b981" stop-opacity="0.4" />
+                    <stop offset="100%" stop-color="#10b981" stop-opacity="0" />
+                  </linearGradient>
+                </defs>
+                <path :d="chartData.areaPath" fill="url(#tempGradient)" />
+                <path
+                  :d="chartData.linePath"
+                  fill="none"
+                  stroke="#10b981"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
             </div>
 
-            <div class="mt-2 flex w-full">
-              <div
-                v-for="group in windGroups"
-                :key="group.id"
-                class="px-[1px] flex items-center justify-center"
-                :style="{ width: `${group.count * COLUMN_WIDTH}px` }"
-              >
-                <div class="rounded bg-gray-100 flex gap-0.5 h-6 w-full items-center justify-center dark:bg-gray-800">
+            <div class="mt-1">
+              <div class="flex w-full">
+                <div
+                  v-for="group in aqiGroups"
+                  :key="group.id"
+                  class="px-[1px] flex items-center justify-center"
+                  :style="{ width: `${group.count * COLUMN_WIDTH}px` }"
+                >
                   <div
-                    class="i-wi-direction-up text-xs text-gray-400"
-                    :style="{ transform: `rotate(${group.data.windDir}deg)` }"
-                  />
-                  <span class="text-[10px] text-gray-600 font-medium whitespace-nowrap dark:text-gray-400">
-                    {{ getWindLevel(group.data.windSpeed) }}级
-                  </span>
+                    class="text-[10px] text-white font-bold rounded flex h-6 w-full transition-colors items-center justify-center relative overflow-hidden"
+                    :class="getAQIDescription(group.data.aqi).color.replace('text-', 'bg-')"
+                  >
+                    <span class="relative z-10 drop-shadow-sm">{{ group.data.aqi }}</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div class="mt-2 pt-2 border-t border-gray-100 flex w-full dark:border-gray-800">
-              <div
-                v-for="item in hourlyData"
-                :key="item.time"
-                class="text-xs flex items-center justify-center"
-                :style="{ width: `${COLUMN_WIDTH}px` }"
-              >
-                <div class="flex flex-col items-center">
-                  <span
-                    class="font-medium"
-                    :class="dayjs(item.time).hour() === 0 ? 'text-primary font-bold' : 'text-gray-400'"
-                  >
-                    {{ dayjs(item.time).hour() === 0 ? dayjs(item.time).format('MM/DD') : dayjs(item.time).format('HH:mm') }}
-                  </span>
+              <div class="mt-2 flex w-full">
+                <div
+                  v-for="group in windGroups"
+                  :key="group.id"
+                  class="px-[1px] flex items-center justify-center"
+                  :style="{ width: `${group.count * COLUMN_WIDTH}px` }"
+                >
+                  <div class="rounded bg-gray-100 flex gap-0.5 h-6 w-full items-center justify-center dark:bg-gray-800">
+                    <div
+                      class="i-wi-direction-up text-xs text-gray-400"
+                      :style="{ transform: `rotate(${group.data.windDir}deg)` }"
+                    />
+                    <span class="text-[10px] text-gray-600 font-medium whitespace-nowrap dark:text-gray-400">
+                      {{ getWindLevel(group.data.windSpeed) }}级
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-2 pt-2 border-t border-gray-100 flex w-full dark:border-gray-800">
+                <div
+                  v-for="item in hourlyData"
+                  :key="item.time"
+                  class="text-xs flex items-center justify-center"
+                  :style="{ width: `${COLUMN_WIDTH}px` }"
+                >
+                  <div class="flex flex-col items-center">
+                    <span
+                      class="font-medium"
+                      :class="dayjs(item.time).hour() === 0 ? 'text-primary font-bold' : 'text-gray-400'"
+                    >
+                      {{ dayjs(item.time).hour() === 0 ? dayjs(item.time).format('MM/DD') : dayjs(item.time).format('HH:mm') }}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
