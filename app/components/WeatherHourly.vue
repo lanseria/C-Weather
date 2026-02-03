@@ -98,7 +98,6 @@ function groupData<T>(list: T[], compareFn: (a: T, b: T) => boolean): GroupedIte
 }
 
 const weatherGroups = computed(() => groupData(hourlyData.value, (a, b) => a.code === b.code))
-const aqiGroups = computed(() => groupData(hourlyData.value, (a, b) => getAQIDescription(a.aqi).color === getAQIDescription(b.aqi).color))
 const windGroups = computed(() => groupData(hourlyData.value, (a, b) => getWindLevel(a.windSpeed) === getWindLevel(b.windSpeed)))
 
 // --- 图表绘制逻辑 (保持原逻辑) ---
@@ -308,16 +307,26 @@ const activeState = computed(() => {
             <div class="mt-1">
               <div class="flex w-full">
                 <div
-                  v-for="group in aqiGroups"
-                  :key="group.id"
-                  class="px-[1px] flex items-center justify-center"
-                  :style="{ width: `${group.count * COLUMN_WIDTH}px` }"
+                  v-for="(item, index) in hourlyData"
+                  :key="item.time"
+                  class="px-[2px] flex items-center justify-center"
+                  :style="{ width: `${COLUMN_WIDTH}px` }"
                 >
                   <div
-                    class="text-[10px] text-white font-bold rounded flex h-6 w-full transition-colors items-center justify-center relative overflow-hidden"
-                    :class="getAQIDescription(group.data.aqi).color.replace('text-', 'bg-')"
+                    class="text-[12px] text-white font-bold rounded flex h-5 w-full transition-all duration-300 items-center justify-center relative overflow-hidden"
+                    :class="[
+                      getAQIDescription(item.aqi).color.replace('text-', 'bg-'),
+                      index === activeState.index
+                        ? 'scale-y-100 z-10'
+                        : 'opacity-70 scale-y-90',
+                    ]"
                   >
-                    <span class="relative z-10 drop-shadow-sm">{{ group.data.aqi }}</span>
+                    <span
+                      v-if="index === activeState.index"
+                      class="relative z-10 animate-fade-in animate-duration-200"
+                    >
+                      {{ item.aqi }}
+                    </span>
                   </div>
                 </div>
               </div>
