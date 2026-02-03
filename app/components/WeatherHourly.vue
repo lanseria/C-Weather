@@ -8,6 +8,9 @@ const { getWeatherIcon, getAQIDescription, getWeatherName, getWindLevel } = useW
 
 // 每一列的基础宽度 (px)
 const COLUMN_WIDTH = 56
+// 图表高度配置
+const CHART_HEIGHT = 176 // h-44 = 176px
+const CHART_PADDING_Y = 20 // 上下预留空间防止贴边
 
 // 滚动容器引用
 const containerRef = ref<HTMLElement | null>(null)
@@ -47,7 +50,7 @@ const hourlyData = computed(() => {
 
 const totalContentWidth = computed(() => hourlyData.value.length * COLUMN_WIDTH)
 
-// --- 分组逻辑 (保持不变) ---
+// --- 分组逻辑 ---
 interface GroupedItem<T> { id: string, count: number, data: T }
 
 function groupData<T>(list: T[], compareFn: (a: T, b: T) => boolean): GroupedItem<T>[] {
@@ -81,83 +84,89 @@ const markerState = computed(() => {
     return { offset: 0, index: 0, item: null }
 
   const maxScroll = totalContentWidth.value - containerWidth.value
-  // 防止除以0
   const scrollRange = maxScroll > 0 ? maxScroll : 1
-
-  // 计算滚动进度 (0 ~ 1)
   const progress = Math.min(Math.max(scrollLeft.value / scrollRange, 0), 1)
 
-  // 1. 计算 Marker 在屏幕上的偏移量 (从左到右)
-  // 当 progress = 0, offset = 0 + 半个格子
-  // 当 progress = 1, offset = 容器宽度 - 半个格子
-  // 减去 COLUMN_WIDTH 是为了让线始终在可视区域内，不会贴死边缘
   const safeZone = containerWidth.value - COLUMN_WIDTH
   const offset = (progress * safeZone) + (COLUMN_WIDTH / 2)
 
-  // 2. 根据进度计算当前对应的“激活”数据索引
-  // 这利用了一个数学巧合：滚动进度映射到屏幕位置，和数据索引映射是对应的
   const totalItems = hourlyData.value.length
   const activeIndex = Math.min(Math.round(progress * (totalItems - 1)), totalItems - 1)
 
   return {
-    offset, // 线的 left 值 (px)
+    offset,
     index: activeIndex,
     item: hourlyData.value[activeIndex],
   }
 })
 
-// --- ECharts 配置 ---
-const chartOption = computed(() => {
-  const data = hourlyData.value
-  const temps = data.map(d => Math.round(d.temp))
-  const lineColor = '#10b981' // 绿色 (Primary Green)
+// --- SVG 图表绘制逻辑 ---
 
-  const min = Math.min(...temps)
-  const max = Math.max(...temps)
+/**
+ * 简单的 Catmull-Rom 样条曲线转 Bezier 算法，用于生成平滑曲线
+ */
+function getControlPoint(current: number[], previous: number[], next: number[], reverse = false) {
+  const p = previous || current
+  const n = next || current
+  // 平滑系数，0.2 比较接近 ECharts 的默认平滑效果
+  const smoothing = 0.2
+
+  const lineX = n[0]! - p[0]!
+  const lineY = n[1]! - p[1]!
+  const length = Math.sqrt(lineX * lineX + lineY * lineY)
+  const angle = Math.atan2(lineY, lineX) + (reverse ? Math.PI : 0)
+
+  const controlLength = length * smoothing
+  const x = current[0]! + Math.cos(angle) * controlLength
+  const y = current[1]! + Math.sin(angle) * controlLength
+
+  return [x, y]
+}
+
+const chartData = computed(() => {
+  const data = hourlyData.value
+  if (!data.length)
+    return { linePath: '', areaPath: '', points: [] }
+
+  const temps = data.map(d => d.temp)
+  const minTemp = Math.min(...temps)
+  const maxTemp = Math.max(...temps)
+  const range = maxTemp - minTemp || 1
+
+  // 1. 计算所有点的坐标
+  const points = data.map((d, i) => {
+    // X轴：居中对齐到列
+    const x = i * COLUMN_WIDTH + (COLUMN_WIDTH / 2)
+    // Y轴：线性插值映射到高度，保留上下 Padding
+    // 注意 SVG 坐标系 Y 向下，所以最大温度对应最小 Y 值
+    const normalizeTemp = (d.temp - minTemp) / range
+    const availableHeight = CHART_HEIGHT - (CHART_PADDING_Y * 2)
+    const y = CHART_HEIGHT - CHART_PADDING_Y - (normalizeTemp * availableHeight)
+    return [x, y]
+  })
+
+  // 2. 生成平滑路径 (Cubic Bezier)
+  let d = `M ${points[0]![0]},${points[0]![1]}`
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const current = points[i]!
+    const next = points[i + 1]!
+    const prev = points[i - 1] || current
+    const nextNext = points[i + 2] || next
+
+    const cp1 = getControlPoint(current, prev, next)
+    const cp2 = getControlPoint(next, nextNext, current, true)
+
+    d += ` C ${cp1[0]},${cp1[1]} ${cp2[0]},${cp2[1]} ${next[0]},${next[1]}`
+  }
+
+  // 3. 生成区域填充路径 (闭合底部)
+  const areaPath = `${d} L ${points[points.length - 1]![0]},${CHART_HEIGHT} L ${points[0]![0]},${CHART_HEIGHT} Z`
 
   return {
-    grid: {
-      // 关键修改：左右设为 0，让线条填满
-      left: 0,
-      right: 0,
-      top: 45, // 留出顶部 Tooltip 的空间
-      bottom: 10,
-      show: false,
-    },
-    xAxis: {
-      type: 'category',
-      show: false,
-      boundaryGap: false, // 点在线上
-      data: data.map(d => d.time),
-    },
-    yAxis: {
-      type: 'value',
-      show: false,
-      min: min - 3,
-      max: max + 3,
-    },
-    series: [
-      {
-        data: temps,
-        type: 'line',
-        smooth: true,
-        symbol: 'none', // 默认不显示点，只在 Marker 处我们自己画
-        lineStyle: { width: 3, color: lineColor },
-        areaStyle: {
-          color: {
-            type: 'linear',
-            x: 0,
-            y: 0,
-            x2: 0,
-            y2: 1,
-            colorStops: [
-              { offset: 0, color: 'rgba(16, 185, 129, 0.4)' },
-              { offset: 1, color: 'rgba(16, 185, 129, 0)' },
-            ],
-          },
-        },
-      },
-    ],
+    linePath: d,
+    areaPath,
+    points, // 用于 Marker 定位圆点
   }
 })
 </script>
@@ -178,8 +187,8 @@ const chartOption = computed(() => {
       class="hide-scrollbar px-4 relative overflow-x-auto -mx-4 md:mx-0 md:px-0"
     >
       <!--
-        Marker 指示器层 (Fixed/Sticky Overlay)
-        它悬浮在滚动内容之上，不随内容滚动，而是根据滚动进度移动位置
+        Marker 指示器层
+        悬浮在滚动内容之上，不随内容滚动，而是根据滚动进度移动位置
       -->
       <div
         v-if="markerState.item"
@@ -205,18 +214,21 @@ const chartOption = computed(() => {
         </div>
 
         <!-- 2. 圆圈 (指示温度点) -->
-        <!-- 注意：这里的 top 需要微调以对齐图表，这里简化处理，视觉上在图表区域 -->
-        <div class="mb-1 mt-9 border-3 border-[#10b981] rounded-full bg-white h-3 w-3 shadow-sm" />
+        <!-- 根据计算出的 Y 坐标动态定位，保证圆圈始终在线上 -->
+        <div
+          class="border-3 border-[#10b981] rounded-full bg-white h-3 w-3 shadow-sm top-0 absolute"
+          :style="{ marginTop: `${chartData.points[markerState.index] ? chartData.points[markerState.index]![1]! - 6 : 0}px` }"
+        />
 
         <!-- 3. 竖线 -->
-        <div class="opacity-50 flex-1 w-[1.5px] from-[#10b981] to-transparent bg-gradient-to-b" />
+        <div class="mt-9 opacity-50 flex-1 w-[1.5px] from-[#10b981] to-transparent bg-gradient-to-b" />
       </div>
 
       <!-- 内容层 -->
       <div class="pb-4 flex flex-col relative" :style="{ width: `${totalContentWidth}px` }">
         <!-- 图表与天气层 -->
         <div class="h-44 relative">
-          <!-- 绝对定位的天气图标 -->
+          <!-- 背景天气图标 -->
           <div class="pt-2 flex w-full pointer-events-none left-0 top-0 absolute z-10">
             <div
               v-for="group in weatherGroups"
@@ -232,7 +244,34 @@ const chartOption = computed(() => {
               </div>
             </div>
           </div>
-          <VChartFull class="h-full w-full" :option="chartOption" :autoresize="true" />
+
+          <!-- SVG 图表 -->
+          <svg
+            class="h-full w-full left-0 top-0 absolute z-20 overflow-visible"
+            :width="totalContentWidth"
+            :height="CHART_HEIGHT"
+          >
+            <defs>
+              <linearGradient id="tempGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#10b981" stop-opacity="0.4" />
+                <stop offset="100%" stop-color="#10b981" stop-opacity="0" />
+              </linearGradient>
+            </defs>
+            <!-- 填充区域 -->
+            <path
+              :d="chartData.areaPath"
+              fill="url(#tempGradient)"
+            />
+            <!-- 折线 -->
+            <path
+              :d="chartData.linePath"
+              fill="none"
+              stroke="#10b981"
+              stroke-width="3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
         </div>
 
         <!-- 空气质量 -->

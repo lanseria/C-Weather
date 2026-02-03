@@ -1,6 +1,3 @@
-shellEmulator: true
-
-trustPolicy: no-downgrade
 packages: []
 
 catalogs:
@@ -11,9 +8,9 @@ catalogs:
     drizzle-orm: ^0.45.1
     paseto: ^3.1.4
     paseto-ts: ^2.0.5
-    pg: ^8.17.2
+    pg: ^8.18.0
     postgres: ^3.4.8
-    undici: ^7.19.1
+    undici: ^7.20.0
   build:
     '@nuxt/eslint': ^1.13.0
     '@nuxt/kit': ^4.3.0
@@ -21,7 +18,7 @@ catalogs:
     '@pinia/nuxt': ^0.11.3
     '@unocss/eslint-config': ^66.6.0
     '@unocss/nuxt': ^66.6.0
-    '@vueuse/nuxt': ^14.1.0
+    '@vueuse/nuxt': ^14.2.0
     nuxt: ^4.3.0
     unocss: ^66.6.0
     unplugin: ^3.0.0
@@ -36,7 +33,7 @@ catalogs:
     vue-tsc: ^3.2.4
   frontend:
     '@unocss/reset': ^66.6.0
-    '@vueuse/core': ^14.1.0
+    '@vueuse/core': ^14.2.0
     echarts: ^6.0.0
     nuxt-echarts: ^1.0.1
     pinia: ^3.0.4
@@ -55,3 +52,7 @@ onlyBuiltDependencies:
   - '@parcel/watcher'
   - esbuild
   - unrs-resolver
+
+shellEmulator: true
+
+trustPolicy: no-downgrade
