@@ -16,6 +16,33 @@ const CHART_PADDING_Y = 20
 const containerRef = ref<HTMLElement | null>(null)
 const { x: scrollLeft } = useScroll(containerRef)
 
+// --- Web 端滚轮横向滚动 ---
+onMounted(() => {
+  const container = containerRef.value
+  if (!container)
+    return
+
+  const handleWheel = (event: WheelEvent) => {
+    // 仅在垂直滚动幅度大于水平滚动时才接管
+    // 这样可以避免干扰触控板的水平滚动操作
+    if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+      // 阻止页面默认的垂直滚动行为
+      event.preventDefault()
+      // 将垂直滚动增量应用到水平滚动上
+      container.scrollLeft += event.deltaY
+    }
+  }
+
+  // 添加滚轮事件监听器
+  // passive: false 是必需的，因为我们需要调用 preventDefault()
+  container.addEventListener('wheel', handleWheel, { passive: false })
+
+  // 组件卸载时移除监听器，防止内存泄漏
+  onUnmounted(() => {
+    container.removeEventListener('wheel', handleWheel)
+  })
+})
+
 // --- 数据处理 (保持原逻辑) ---
 const hourlyData = computed(() => {
   const data = weatherStore.weatherData?.hourly
@@ -105,7 +132,10 @@ const chartData = computed(() => {
     return [x, y]
   })
 
-  let d = `M ${points[0]![0]},${points[0]![1]}`
+  // 优化路径：从 0 位置开始，以 totalContentWidth 结束
+  // 起点：延伸到最左侧 (0, 第一个点的高度)
+  let d = `M 0,${points[0]![1]} L ${points[0]![0]},${points[0]![1]}`
+
   for (let i = 0; i < points.length - 1; i++) {
     const current = points[i]!
     const next = points[i + 1]!
@@ -115,7 +145,13 @@ const chartData = computed(() => {
     const cp2 = getControlPoint(next, nextNext, current, true)
     d += ` C ${cp1[0]},${cp1[1]} ${cp2[0]},${cp2[1]} ${next[0]},${next[1]}`
   }
-  const areaPath = `${d} L ${points[points.length - 1]![0]},${CHART_HEIGHT} L ${points[0]![0]},${CHART_HEIGHT} Z`
+
+  // 终点：延伸到最右侧 (总宽度, 最后一个点的高度)
+  const lastPoint = points[points.length - 1]!
+  d += ` L ${totalContentWidth.value},${lastPoint[1]}`
+
+  // 闭合路径：确保背景色占满底部
+  const areaPath = `${d} L ${totalContentWidth.value},${CHART_HEIGHT} L 0,${CHART_HEIGHT} Z`
 
   return { linePath: d, areaPath, points }
 })
