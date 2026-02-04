@@ -2,7 +2,7 @@
 import { useWeatherStore } from '~/stores/weather'
 
 const weatherStore = useWeatherStore()
-const { getWeatherIcon, getAQIDescription } = useWeatherUtils()
+const { getWeatherIcon, getAQIDescription, formatWindSpeed } = useWeatherUtils()
 
 const current = computed(() => weatherStore.weatherData?.current)
 const aqiInfo = computed(() => current.value ? getAQIDescription(current.value.us_aqi || 0) : { text: '-', color: '' })
@@ -52,7 +52,7 @@ const aqiInfo = computed(() => current.value ? getAQIDescription(current.value.u
           <span class="text-xs text-gray-400">风速</span>
           <div class="flex gap-2 items-center">
             <div class="i-wi-strong-wind text-xl text-gray-600 dark:text-gray-300" />
-            <span class="font-medium">{{ current.wind_speed_10m }} km/h</span>
+            <span class="font-medium">{{ formatWindSpeed(current.wind_speed_10m) }}</span>
           </div>
         </div>
         <!-- 风向 -->

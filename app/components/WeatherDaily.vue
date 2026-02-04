@@ -3,7 +3,7 @@ import dayjs from 'dayjs'
 import { useWeatherStore } from '~/stores/weather'
 
 const weatherStore = useWeatherStore()
-const { getWeatherIcon, getAQIDescription } = useWeatherUtils()
+const { getWeatherIcon, getAQIDescription, formatWindSpeed } = useWeatherUtils()
 
 const dailyData = computed(() => {
   const data = weatherStore.weatherData?.daily
@@ -60,7 +60,7 @@ const dailyData = computed(() => {
         <div class="text-sm text-gray-500 flex-col hidden md:flex">
           <div class="flex gap-1 items-center">
             <div class="i-wi-strong-wind text-lg" />
-            <span>均 {{ Math.round(item.windSpeed) }} km/h</span>
+            <span>均 {{ formatWindSpeed(item.windSpeed) }}</span>
           </div>
         </div>
 
@@ -68,7 +68,7 @@ const dailyData = computed(() => {
         <div class="text-sm text-gray-500 flex-col hidden md:flex">
           <div class="flex gap-1 items-center">
             <div class="i-wi-gale-warning text-lg" />
-            <span>阵 {{ Math.round(item.gusts) }} km/h</span>
+            <span>阵 {{ formatWindSpeed(item.gusts) }}</span>
           </div>
         </div>
       </div>

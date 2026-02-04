@@ -2,6 +2,7 @@
 import { useWeatherStore } from '~/stores/weather'
 
 const weatherStore = useWeatherStore()
+const isSettingsOpen = ref(false)
 
 onMounted(() => {
   weatherStore.fetchWeather()
@@ -20,14 +21,23 @@ onMounted(() => {
         </p>
       </div>
 
-      <button
-        class="icon-btn p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
-        :class="{ 'animate-spin': weatherStore.loading }"
-        title="刷新"
-        @click="weatherStore.fetchWeather()"
-      >
-        <div class="i-carbon-renew text-xl" />
-      </button>
+      <div class="flex gap-2 items-center">
+        <button
+          class="icon-btn p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+          title="设置"
+          @click="isSettingsOpen = true"
+        >
+          <div class="i-carbon-settings text-xl" />
+        </button>
+        <button
+          class="icon-btn p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+          :class="{ 'animate-spin': weatherStore.loading }"
+          title="刷新"
+          @click="weatherStore.fetchWeather()"
+        >
+          <div class="i-carbon-renew text-xl" />
+        </button>
+      </div>
     </div>
 
     <div v-if="weatherStore.loading && !weatherStore.weatherData" class="text-gray-500 py-20 text-center">
@@ -40,5 +50,9 @@ onMounted(() => {
       <WeatherHourly />
       <WeatherDaily />
     </div>
+
+    <Teleport to="body">
+      <SettingsModal v-if="isSettingsOpen" @close="isSettingsOpen = false" />
+    </Teleport>
   </div>
 </template>

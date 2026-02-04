@@ -1,4 +1,8 @@
+import type { WindSpeedUnit } from '~/stores/settings'
+import { useSettingsStore } from '~/stores/settings'
+
 export function useWeatherUtils() {
+  const settingsStore = useSettingsStore()
   /**
    * 将 WMO Weather Code 转换为 Weather Icons (wi) 类名
    * https://erikflowers.github.io/weather-icons/
@@ -134,10 +138,36 @@ export function useWeatherUtils() {
       return 10
     return 11
   }
+
+  /**
+   * 格式化风速，根据全局设置返回带单位的字符串
+   * @param speedInKmh 速度 (km/h)
+   * @param unit 目标单位 (可选, 默认为 Pinia store 中的值)
+   */
+  const formatWindSpeed = (speedInKmh: number, unit?: WindSpeedUnit) => {
+    const targetUnit = unit || settingsStore.windSpeedUnit
+    const speed = Math.round(speedInKmh)
+
+    switch (targetUnit) {
+      case 'bft':
+        return `${getWindLevel(speed)} 级`
+      case 'm/s':
+        return `${(speed / 3.6).toFixed(1)} m/s`
+      case 'mph':
+        return `${(speed / 1.609).toFixed(1)} mph`
+      case 'knots':
+        return `${(speed / 1.852).toFixed(1)} knots`
+      case 'km/h':
+      default:
+        return `${speed} km/h`
+    }
+  }
+
   return {
     getWeatherIcon,
     getAQIDescription,
     getWeatherName,
     getWindLevel,
+    formatWindSpeed,
   }
 }

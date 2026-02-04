@@ -5,7 +5,7 @@ import { useWeatherStore } from '~/stores/weather'
 
 const weatherStore = useWeatherStore()
 // 假设这些工具函数已存在
-const { getWeatherIcon, getAQIDescription, getWeatherName, getWindLevel } = useWeatherUtils()
+const { getWeatherIcon, getAQIDescription, getWeatherName, getWindLevel, formatWindSpeed } = useWeatherUtils()
 
 // --- 常量配置 ---
 const COLUMN_WIDTH = 56
@@ -344,7 +344,7 @@ const activeState = computed(() => {
                       :style="{ transform: `rotate(${group.data.windDir}deg)` }"
                     />
                     <span class="text-[10px] text-gray-600 font-medium whitespace-nowrap dark:text-gray-400">
-                      {{ getWindLevel(group.data.windSpeed) }}级
+                      {{ formatWindSpeed(group.data.windSpeed) }}
                     </span>
                   </div>
                 </div>
