@@ -49,16 +49,22 @@ const hourlyData = computed(() => {
   if (!data)
     return []
 
+  // 找到当前小时在数据数组中的索引
+  // 由于请求了 past_days=1，startIndex 通常在 24 左右
   const currentHour = dayjs().startOf('hour')
   const startIndex = data.time.findIndex(t => dayjs(t).isSame(currentHour))
 
   if (startIndex === -1)
     return []
 
+  // 我们只展示从“现在”开始的预报数据
   return data.time.slice(startIndex).map((time, i) => {
     const index = startIndex + i
-    const prevTemp = index > 23 ? data.temperature_2m[index - 24] : null
-    const tempDiff = prevTemp !== null ? data.temperature_2m[index]! - prevTemp! : null
+
+    // 核心逻辑：对比昨天同一时刻的温度
+    // 只要 index >= 24，data.temperature_2m[index - 24] 就是昨天的值
+    const yesterdayTemp = data.temperature_2m[index - 24]
+    const tempDiff = yesterdayTemp !== undefined ? data.temperature_2m[index]! - yesterdayTemp : null
 
     return {
       time,
@@ -210,10 +216,16 @@ const activeState = computed(() => {
             </div>
 
             <div class="flex flex-col gap-1 w-full">
-              <div v-if="activeState.item.tempDiff !== null" class="text-[10px] px-1.5 py-0.5 rounded bg-black/10 flex w-full items-center justify-center">
-                <span class="opacity-70">比昨</span>
-                <span class="mx-0.5" :class="activeState.item.tempDiff > 0 ? 'i-carbon-arrow-up' : 'i-carbon-arrow-down'" />
-                <span>{{ Math.abs(Math.round(activeState.item.tempDiff)) }}°</span>
+              <div
+                v-if="activeState.item.tempDiff !== null && Math.abs(Math.round(activeState.item.tempDiff)) !== 0"
+                class="text-[10px] px-1.5 py-0.5 rounded bg-black/10 flex w-full items-center justify-center"
+              >
+                <span class="opacity-70">比昨日</span>
+                <span class="mx-0.5" :class="activeState.item.tempDiff > 0 ? 'i-carbon-arrow-up text-orange-300' : 'i-carbon-arrow-down text-blue-300'" />
+                <span class="font-bold">{{ Math.abs(Math.round(activeState.item.tempDiff)) }}°</span>
+              </div>
+              <div v-else-if="activeState.item.tempDiff !== null" class="text-[10px] px-1.5 py-0.5 rounded bg-black/10 flex w-full items-center justify-center">
+                <span class="opacity-70">与昨日持平</span>
               </div>
             </div>
           </div>
