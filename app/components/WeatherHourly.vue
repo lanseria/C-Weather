@@ -8,9 +8,13 @@ const weatherStore = useWeatherStore()
 const { getWeatherIcon, getAQIDescription, getWeatherName, getWindLevel, formatWindSpeed, formatTemperature } = useWeatherUtils()
 
 // --- 常量配置 ---
-const COLUMN_WIDTH = 56
+const COLUMN_WIDTH = 36
 const CHART_HEIGHT = 176
 const CHART_PADDING_Y = 20
+const LABEL_WIDTH = 48 // 左侧固定标签的宽度
+
+// 指示器位置 = 左侧标签宽度 + 半个列宽 (居中对齐)
+const INDICATOR_LEFT = LABEL_WIDTH + (COLUMN_WIDTH / 2)
 
 // --- 容器引用 ---
 const containerRef = ref<HTMLElement | null>(null)
@@ -121,44 +125,51 @@ function getControlPoint(current: number[], previous: number[], next: number[], 
 
 const chartData = computed(() => {
   const data = hourlyData.value
-  if (!data.length)
-    return { linePath: '', areaPath: '', points: [] }
+  const rawHourly = weatherStore.weatherData?.hourly
+  if (!data.length || !rawHourly)
+    return { linePath: '', areaPath: '', yesterdayLinePath: '', points: [] }
 
-  const temps = data.map(d => d.temp)
-  const minTemp = Math.min(...temps)
-  const maxTemp = Math.max(...temps)
+  // 确定起始索引以获取昨日数据
+  const startIndex = rawHourly.time.findIndex(t => dayjs(t).isSame(dayjs(data[0]!.time)))
+
+  // 计算这两天总的温度范围，保证两条线在同一刻度下
+  const todayTemps = data.map(d => d.temp)
+  const yesterdayTemps = data.map((_, i) => rawHourly.temperature_2m[startIndex + i - 24]).filter(t => t !== undefined) as number[]
+
+  const allTemps = [...todayTemps, ...yesterdayTemps]
+  const minTemp = Math.min(...allTemps)
+  const maxTemp = Math.max(...allTemps)
   const range = maxTemp - minTemp || 1
+  const availableHeight = CHART_HEIGHT - (CHART_PADDING_Y * 2)
 
-  const points = data.map((d, i) => {
-    const x = i * COLUMN_WIDTH + (COLUMN_WIDTH / 2)
-    const normalizeTemp = (d.temp - minTemp) / range
-    const availableHeight = CHART_HEIGHT - (CHART_PADDING_Y * 2)
-    const y = CHART_HEIGHT - CHART_PADDING_Y - (normalizeTemp * availableHeight)
-    return [x, y]
-  })
+  const getPointY = (temp: number) => CHART_HEIGHT - CHART_PADDING_Y - (((temp - minTemp) / range) * availableHeight)
 
-  // 优化路径：从 0 位置开始，以 totalContentWidth 结束
-  // 起点：延伸到最左侧 (0, 第一个点的高度)
-  let d = `M 0,${points[0]![1]} L ${points[0]![0]},${points[0]![1]}`
+  // 计算点位
+  const points = data.map((d, i) => [i * COLUMN_WIDTH + (COLUMN_WIDTH / 2), getPointY(d.temp)])
+  const yesterdayPoints = data.map((_, i) => {
+    const yTemp = rawHourly.temperature_2m[startIndex + i - 24]
+    return yTemp !== undefined ? [i * COLUMN_WIDTH + (COLUMN_WIDTH / 2), getPointY(yTemp)] : null
+  }).filter(p => p !== null) as number[][]
 
-  for (let i = 0; i < points.length - 1; i++) {
-    const current = points[i]!
-    const next = points[i + 1]!
-    const prev = points[i - 1] || current
-    const nextNext = points[i + 2] || next
-    const cp1 = getControlPoint(current, prev, next)
-    const cp2 = getControlPoint(next, nextNext, current, true)
-    d += ` C ${cp1[0]},${cp1[1]} ${cp2[0]},${cp2[1]} ${next[0]},${next[1]}`
+  // 生成贝塞尔曲线路径的通用函数
+  const generatePath = (pts: number[][]) => {
+    if (!pts.length)
+      return ''
+    let path = `M 0,${pts[0]![1]} L ${pts[0]![0]},${pts[0]![1]}`
+    for (let i = 0; i < pts.length - 1; i++) {
+      const cp1 = getControlPoint(pts[i]!, pts[i - 1] || pts[i]!, pts[i + 1]!)
+      const cp2 = getControlPoint(pts[i + 1]!, pts[i + 2] || pts[i + 1]!, pts[i]!, true)
+      path += ` C ${cp1[0]},${cp1[1]} ${cp2[0]},${cp2[1]} ${pts[i + 1]![0]},${pts[i + 1]![1]}`
+    }
+    path += ` L ${totalContentWidth.value},${pts[pts.length - 1]![1]}`
+    return path
   }
 
-  // 终点：延伸到最右侧 (总宽度, 最后一个点的高度)
-  const lastPoint = points[points.length - 1]!
-  d += ` L ${totalContentWidth.value},${lastPoint[1]}`
+  const linePath = generatePath(points)
+  const yesterdayLinePath = generatePath(yesterdayPoints)
+  const areaPath = `${linePath} L ${totalContentWidth.value},${CHART_HEIGHT} L 0,${CHART_HEIGHT} Z`
 
-  // 闭合路径：确保背景色占满底部
-  const areaPath = `${d} L ${totalContentWidth.value},${CHART_HEIGHT} L 0,${CHART_HEIGHT} Z`
-
-  return { linePath: d, areaPath, points }
+  return { linePath, areaPath, yesterdayLinePath, points }
 })
 
 // --- 激活状态计算 ---
@@ -231,8 +242,11 @@ const activeState = computed(() => {
           </div>
         </div>
 
-        <!-- 指示器位置：28px (半列宽) + 48px (左侧标签宽度) = 76px -->
-        <div class="flex flex-col items-center bottom-0 left-[76px] top-0 absolute">
+        <!-- 指示器位置：动态计算 -->
+        <div
+          class="flex flex-col items-center bottom-0 top-0 absolute"
+          :style="{ left: `${INDICATOR_LEFT}px` }"
+        >
           <div
             class="border-[3px] border-[#10b981] rounded-full bg-white h-3 w-3 shadow-sm transition-[top] duration-150 ease-out absolute z-10"
             :style="{ top: `${activeState.y! - 6}px` }"
@@ -253,9 +267,15 @@ const activeState = computed(() => {
       <!-- 布局外层容器 -->
       <div class="flex h-full">
         <!-- 左侧固定标签列 -->
-        <div class="text-[10px] text-gray-400 font-medium flex flex-shrink-0 flex-col w-[48px]">
-          <!-- 温度/趋势标签 - 对应 176px 高度的图表 -->
-          <div class="flex h-[176px] items-center justify-center">
+        <div
+          class="text-[10px] text-gray-400 font-medium flex flex-shrink-0 flex-col"
+          :style="{ width: `${LABEL_WIDTH}px` }"
+        >
+          <!-- 温度/趋势标签 - 动态高度 -->
+          <div
+            class="flex items-center justify-center"
+            :style="{ height: `${CHART_HEIGHT}px` }"
+          >
             <span>温度</span>
           </div>
           <!-- 空气标签 - 对应 h-6 + mt-1 -->
@@ -276,7 +296,7 @@ const activeState = computed(() => {
           class="hide-scrollbar flex-1 h-full relative overflow-x-auto"
         >
           <div class="pb-4 flex flex-col relative" :style="{ width: `${totalContentWidth}px` }">
-            <div class="h-[176px] relative">
+            <div class="relative" :style="{ height: `${CHART_HEIGHT}px` }">
               <div class="flex h-full w-full pointer-events-none left-0 top-0 absolute z-10">
                 <div
                   v-for="group in weatherGroups"
@@ -304,6 +324,20 @@ const activeState = computed(() => {
                     <stop offset="100%" stop-color="#10b981" stop-opacity="0" />
                   </linearGradient>
                 </defs>
+
+                <!-- 昨天温度曲线 (虚线) -->
+                <path
+                  :d="chartData.yesterdayLinePath"
+                  fill="none"
+                  stroke="#10b981"
+                  stroke-width="1.5"
+                  stroke-dasharray="4 4"
+                  stroke-opacity="0.3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+
+                <!-- 今天温度曲线 (实线与阴影) -->
                 <path :d="chartData.areaPath" fill="url(#tempGradient)" />
                 <path
                   :d="chartData.linePath"
