@@ -2,7 +2,7 @@
 import { useWeatherStore } from '~/stores/weather'
 
 const weatherStore = useWeatherStore()
-const { getWeatherIcon, getAQIDescription, formatWindSpeed } = useWeatherUtils()
+const { getWeatherIcon, getAQIDescription, formatWindSpeed, formatTemperature } = useWeatherUtils()
 
 const current = computed(() => weatherStore.weatherData?.current)
 const aqiInfo = computed(() => current.value ? getAQIDescription(current.value.us_aqi || 0) : { text: '-', color: '' })
@@ -20,10 +20,10 @@ const aqiInfo = computed(() => current.value ? getAQIDescription(current.value.u
           <div :class="getWeatherIcon(current.weather_code, current.is_day)" class="text-6xl text-primary" />
           <div>
             <div class="text-5xl tracking-tighter font-bold">
-              {{ Math.round(current.temperature_2m) }}°
+              {{ formatTemperature(current.temperature_2m) }}
             </div>
             <div class="text-sm text-gray-500 dark:text-gray-400">
-              体感 {{ Math.round(current.apparent_temperature) }}°
+              体感 {{ formatTemperature(current.apparent_temperature) }}
             </div>
           </div>
         </div>
@@ -60,7 +60,7 @@ const aqiInfo = computed(() => current.value ? getAQIDescription(current.value.u
           <span class="text-xs text-gray-400">风向</span>
           <div class="flex gap-2 items-center">
             <div
-              class="i-wi-direction-up text-xl text-gray-600 transition-transform duration-500 dark:text-gray-300"
+              class="i-tabler-arrow-down text-xl text-gray-600 transition-transform duration-500 dark:text-gray-300"
               :style="{ transform: `rotate(${current.wind_direction_10m}deg)` }"
             />
             <span class="font-medium">{{ current.wind_direction_10m }}°</span>

@@ -62,18 +62,21 @@ export function useWeatherUtils() {
   /**
    * 获取空气质量描述
    */
-  const getAQIDescription = (aqi: number) => {
-    if (aqi <= 50)
-      return { text: '优', color: 'text-green-500' }
-    if (aqi <= 100)
-      return { text: '良', color: 'text-yellow-500' }
-    if (aqi <= 150)
-      return { text: '轻度污染', color: 'text-orange-500' }
-    if (aqi <= 200)
-      return { text: '中度污染', color: 'text-red-500' }
-    if (aqi <= 300)
-      return { text: '重度污染', color: 'text-purple-500' }
-    return { text: '严重污染', color: 'text-red-900' }
+  const getAQIDescription = (aqi?: number | null) => {
+    // 处理空值或无效值
+    if (aqi === null || aqi === undefined)
+      return { text: '无数据', color: 'text-gray-400' }
+
+    const levels = [
+      { max: 50, text: '优', color: 'text-green-500' },
+      { max: 100, text: '良', color: 'text-yellow-500' },
+      { max: 150, text: '轻度', color: 'text-orange-500' },
+      { max: 200, text: '中度', color: 'text-red-500' },
+      { max: 300, text: '重度', color: 'text-purple-500' },
+      { max: Infinity, text: '严重', color: 'text-red-900' },
+    ]
+
+    return levels.find(level => aqi <= level.max) || levels[levels.length - 1]!
   }
   /**
    * 获取天气中文名称
@@ -163,11 +166,40 @@ export function useWeatherUtils() {
     }
   }
 
+  /**
+   * 格式化温度
+   * @param celsius 摄氏度数值
+   * @param showUnit 是否显示单位符号
+   */
+  const formatTemperature = (celsius: number, showUnit = true) => {
+    const unit = settingsStore.tempUnit
+    let value: number
+    let suffix: string
+
+    switch (unit) {
+      case 'fahrenheit':
+        value = (celsius * 9) / 5 + 32
+        suffix = '°F'
+        break
+      case 'kelvin':
+        value = celsius + 273.15
+        suffix = ' K'
+        break
+      case 'celsius':
+      default:
+        value = celsius
+        suffix = '°'
+    }
+
+    return `${Math.round(value)}${showUnit ? suffix : ''}`
+  }
+
   return {
     getWeatherIcon,
     getAQIDescription,
     getWeatherName,
     getWindLevel,
     formatWindSpeed,
+    formatTemperature,
   }
 }

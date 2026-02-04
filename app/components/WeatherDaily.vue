@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import dayjs from 'dayjs'
 import { useWeatherStore } from '~/stores/weather'
+import 'dayjs/locale/zh-cn'
 
 const weatherStore = useWeatherStore()
-const { getWeatherIcon, getAQIDescription, formatWindSpeed } = useWeatherUtils()
+const { getWeatherIcon, getAQIDescription, formatWindSpeed, formatTemperature } = useWeatherUtils()
 
 const dailyData = computed(() => {
   const data = weatherStore.weatherData?.daily
@@ -37,15 +38,15 @@ const dailyData = computed(() => {
         <div class="flex gap-3 items-center">
           <div :class="getWeatherIcon(item.code)" class="text-2xl text-primary flex-shrink-0" />
           <div class="flex flex-col">
-            <span class="font-medium">{{ dayjs(item.time).format('MM/DD dddd') }}</span>
+            <span class="font-medium">{{ dayjs(item.time).locale('zh-cn').format('MM/DD dddd') }}</span>
           </div>
         </div>
 
         <!-- 温度范围 (移动端居中) -->
         <div class="text-center md:text-left">
-          <span class="font-bold">{{ Math.round(item.maxTemp) }}°</span>
+          <span class="font-bold">{{ formatTemperature(item.maxTemp) }}</span>
           <span class="text-gray-400 mx-1">/</span>
-          <span class="text-gray-500">{{ Math.round(item.minTemp) }}°</span>
+          <span class="text-gray-500">{{ formatTemperature(item.minTemp) }}</span>
         </div>
 
         <!-- 空气质量 (桌面端显示) -->

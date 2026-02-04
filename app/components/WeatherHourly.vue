@@ -5,7 +5,7 @@ import { useWeatherStore } from '~/stores/weather'
 
 const weatherStore = useWeatherStore()
 // 假设这些工具函数已存在
-const { getWeatherIcon, getAQIDescription, getWeatherName, getWindLevel, formatWindSpeed } = useWeatherUtils()
+const { getWeatherIcon, getAQIDescription, getWeatherName, getWindLevel, formatWindSpeed, formatTemperature } = useWeatherUtils()
 
 // --- 常量配置 ---
 const COLUMN_WIDTH = 56
@@ -206,7 +206,7 @@ const activeState = computed(() => {
             </div>
 
             <div class="mb-1 flex gap-1 items-end">
-              <span class="text-2xl leading-none tracking-tighter font-bold">{{ Math.round(activeState.item.temp) }}°</span>
+              <span class="text-2xl leading-none tracking-tighter font-bold">{{ formatTemperature(activeState.item.temp) }}</span>
             </div>
 
             <div class="flex flex-col gap-1 w-full">
@@ -340,7 +340,7 @@ const activeState = computed(() => {
                 >
                   <div class="rounded bg-gray-100 flex gap-0.5 h-6 w-full items-center justify-center dark:bg-gray-800">
                     <div
-                      class="i-wi-direction-up text-xs text-gray-400"
+                      class="i-tabler-arrow-down text-xs text-gray-400"
                       :style="{ transform: `rotate(${group.data.windDir}deg)` }"
                     />
                     <span class="text-[10px] text-gray-600 font-medium whitespace-nowrap dark:text-gray-400">
