@@ -2,7 +2,7 @@
 import { useWeatherStore } from '~/stores/weather'
 
 const weatherStore = useWeatherStore()
-const { getWeatherIcon, getAQIDescription, formatWindSpeed, formatTemperature } = useWeatherUtils()
+const { getWeatherIcon, getAQIDescription, formatWindSpeed, formatTemperature, getWeatherName } = useWeatherUtils()
 
 const current = computed(() => weatherStore.weatherData?.current)
 const aqiInfo = computed(() => current.value ? getAQIDescription(current.value.us_aqi || 0) : { text: '-', color: '' })
@@ -19,8 +19,13 @@ const aqiInfo = computed(() => current.value ? getAQIDescription(current.value.u
         <div class="flex gap-4 items-center justify-center md:justify-start">
           <div :class="getWeatherIcon(current.weather_code, current.is_day)" class="text-6xl text-primary" />
           <div>
-            <div class="text-5xl tracking-tighter font-bold">
-              {{ formatTemperature(current.temperature_2m) }}
+            <div class="flex gap-2 items-end">
+              <div class="text-5xl tracking-tighter font-bold">
+                {{ formatTemperature(current.temperature_2m) }}
+              </div>
+              <div class="text-lg font-medium mb-1.5 opacity-80">
+                {{ getWeatherName(current.weather_code) }}
+              </div>
             </div>
             <div class="text-sm text-gray-500 dark:text-gray-400">
               体感 {{ formatTemperature(current.apparent_temperature) }}

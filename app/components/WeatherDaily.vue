@@ -4,7 +4,7 @@ import { useWeatherStore } from '~/stores/weather'
 import 'dayjs/locale/zh-cn'
 
 const weatherStore = useWeatherStore()
-const { getWeatherIcon, getAQIDescription, formatWindSpeed, formatTemperature } = useWeatherUtils()
+const { getWeatherIcon, getAQIDescription, formatWindSpeed, formatTemperature, getWeatherName } = useWeatherUtils()
 
 const dailyData = computed(() => {
   const data = weatherStore.weatherData?.daily
@@ -36,9 +36,10 @@ const dailyData = computed(() => {
       >
         <!-- 日期与总体天气 -->
         <div class="flex gap-3 items-center">
-          <div :class="getWeatherIcon(item.code)" class="text-2xl text-primary flex-shrink-0" />
+          <div :class="getWeatherIcon(item.code)" class="text-3xl text-primary flex-shrink-0" />
           <div class="flex flex-col">
-            <span class="font-medium">{{ dayjs(item.time).locale('zh-cn').format('MM/DD dddd') }}</span>
+            <span class="text-sm font-medium">{{ dayjs(item.time).locale('zh-cn').format('MM/DD dddd') }}</span>
+            <span class="text-xs text-gray-500 dark:text-gray-400">{{ getWeatherName(item.code) }}</span>
           </div>
         </div>
 

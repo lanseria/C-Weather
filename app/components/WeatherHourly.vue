@@ -398,17 +398,31 @@ const activeState = computed(() => {
 
               <div class="mt-2 pt-2 border-t border-gray-100 flex w-full dark:border-gray-800">
                 <div
-                  v-for="item in hourlyData"
+                  v-for="(item, index) in hourlyData"
                   :key="item.time"
-                  class="text-xs flex items-center justify-center"
+                  class="text-[11px] flex items-center justify-center"
                   :style="{ width: `${COLUMN_WIDTH}px` }"
                 >
-                  <div class="flex flex-col items-center">
+                  <!-- 仅展示：第一个(现在)、0点、以及每隔4小时的点 -->
+                  <div
+                    v-if="index === 0 || [0, 4, 8, 12, 16, 20].includes(dayjs(item.time).hour())"
+                    class="flex flex-col items-center"
+                  >
                     <span
-                      class="font-medium"
-                      :class="dayjs(item.time).hour() === 0 ? 'text-primary font-bold' : 'text-gray-400'"
+                      class="font-medium whitespace-nowrap"
+                      :class="[
+                        index === 0 || dayjs(item.time).hour() === 0
+                          ? 'text-primary font-bold'
+                          : 'text-gray-400',
+                      ]"
                     >
-                      {{ dayjs(item.time).hour() === 0 ? dayjs(item.time).format('MM/DD') : dayjs(item.time).format('HH:mm') }}
+                      <template v-if="index === 0">现在</template>
+                      <template v-else-if="dayjs(item.time).hour() === 0">
+                        {{ dayjs(item.time).format('MM/DD') }}
+                      </template>
+                      <template v-else>
+                        {{ dayjs(item.time).format('HH:00') }}
+                      </template>
                     </span>
                   </div>
                 </div>
