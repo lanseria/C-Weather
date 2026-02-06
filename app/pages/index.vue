@@ -4,6 +4,21 @@ import { useWeatherStore } from '~/stores/weather'
 const weatherStore = useWeatherStore()
 const isSettingsOpen = ref(false)
 
+// --- 主题切换逻辑 ---
+const color = useColorMode()
+
+useHead({
+  meta: [{
+    id: 'theme-color',
+    name: 'theme-color',
+    content: () => color.value === 'dark' ? '#222222' : '#ffffff',
+  }],
+})
+
+function toggleDark() {
+  color.preference = color.value === 'dark' ? 'light' : 'dark'
+}
+
 onMounted(() => {
   weatherStore.fetchWeather()
 })
@@ -22,6 +37,14 @@ onMounted(() => {
       </div>
 
       <div class="flex gap-2 items-center">
+        <button
+          class="icon-btn p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+          title="切换主题"
+          @click="toggleDark"
+        >
+          <div class="i-carbon-sun dark:i-carbon-moon text-xl" />
+        </button>
+
         <button
           class="icon-btn p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
           title="设置"
