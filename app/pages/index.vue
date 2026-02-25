@@ -3,6 +3,7 @@ import { useWeatherStore } from '~/stores/weather'
 
 const weatherStore = useWeatherStore()
 const isSettingsOpen = ref(false)
+const isHelpOpen = ref(false) // 新增控制状态
 
 // --- 主题切换逻辑 ---
 const color = useColorMode()
@@ -37,6 +38,15 @@ onMounted(() => {
       </div>
 
       <div class="flex gap-2 items-center">
+        <!-- 新增帮助按钮 -->
+        <button
+          class="icon-btn p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+          title="参数帮助"
+          @click="isHelpOpen = true"
+        >
+          <div class="i-carbon-help text-xl" />
+        </button>
+
         <button
           class="icon-btn p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
           title="切换主题"
@@ -76,6 +86,7 @@ onMounted(() => {
 
     <Teleport to="body">
       <SettingsModal v-if="isSettingsOpen" @close="isSettingsOpen = false" />
+      <HelpModal v-if="isHelpOpen" @close="isHelpOpen = false" />
     </Teleport>
   </div>
 </template>
