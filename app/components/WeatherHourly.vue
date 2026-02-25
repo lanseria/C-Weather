@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useScroll } from '@vueuse/core'
+import { useElementSize, useScroll } from '@vueuse/core'
 import dayjs from 'dayjs'
 import { useWeatherStore } from '~/stores/weather'
 
@@ -9,17 +9,15 @@ const { getWeatherIcon, getAQIDescription, getWeatherName, getWindLevel, formatW
 
 // --- 常量配置 ---
 const COLUMN_WIDTH = 36
-const CHART_HEIGHT = 200 // 增加高度以容纳更多细节
+const CHART_HEIGHT = 260 // 增加高度以容纳更多细节
 const CONTENT_HEIGHT = 70 // 底部预留给图标和文字的高度
-const TOP_PADDING = 20 // 顶部预留高度
+const TOP_PADDING = 80 // 顶部预留高度 (增加到 80px 给 Tooltip 腾出空间)
 const LABEL_WIDTH = 48
-
-// 指示器位置
-const INDICATOR_LEFT = LABEL_WIDTH + (COLUMN_WIDTH / 2)
 
 // --- 容器引用 ---
 const containerRef = ref<HTMLElement | null>(null)
 const { x: scrollLeft } = useScroll(containerRef)
+const { width: containerWidth } = useElementSize(containerRef) // 获取容器实时宽度
 
 // --- Web 端滚轮横向滚动 ---
 onMounted(() => {
@@ -29,45 +27,33 @@ onMounted(() => {
 
   const handleWheel = (event: WheelEvent) => {
     // 仅在垂直滚动幅度大于水平滚动时才接管
-    // 这样可以避免干扰触控板的水平滚动操作
     if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
-      // 阻止页面默认的垂直滚动行为
       event.preventDefault()
-      // 将垂直滚动增量应用到水平滚动上
       container.scrollLeft += event.deltaY
     }
   }
 
-  // 添加滚轮事件监听器
-  // passive: false 是必需的，因为我们需要调用 preventDefault()
   container.addEventListener('wheel', handleWheel, { passive: false })
 
-  // 组件卸载时移除监听器，防止内存泄漏
   onUnmounted(() => {
     container.removeEventListener('wheel', handleWheel)
   })
 })
 
-// --- 数据处理 (保持原逻辑) ---
+// --- 数据处理 ---
 const hourlyData = computed(() => {
   const data = weatherStore.weatherData?.hourly
   if (!data)
     return []
 
-  // 找到当前小时在数据数组中的索引
-  // 由于请求了 past_days=1，startIndex 通常在 24 左右
   const currentHour = dayjs().startOf('hour')
   const startIndex = data.time.findIndex(t => dayjs(t).isSame(currentHour))
 
   if (startIndex === -1)
     return []
 
-  // 我们只展示从“现在”开始的预报数据
   return data.time.slice(startIndex).map((time, i) => {
     const index = startIndex + i
-
-    // 核心逻辑：对比昨天同一时刻的温度
-    // 只要 index >= 24，data.temperature_2m[index - 24] 就是昨天的值
     const yesterdayTemp = data.temperature_2m[index - 24]
     const tempDiff = yesterdayTemp !== undefined ? data.temperature_2m[index]! - yesterdayTemp : null
 
@@ -111,42 +97,25 @@ function groupData<T>(list: T[], compareFn: (a: T, b: T) => boolean): GroupedIte
 const weatherGroups = computed(() => groupData(hourlyData.value, (a, b) => a.code === b.code))
 const windGroups = computed(() => groupData(hourlyData.value, (a, b) => getWindLevel(a.windSpeed) === getWindLevel(b.windSpeed)))
 
-/**
- * 根据天气代码获取背景样式类
- */
+// 背景样式处理...
 function getWeatherBackgroundClass(code: number) {
-  // 基础类：从下往上渐变，底部透明 (适配文字区域)，中间显色
   const base = 'bg-gradient-to-t from-transparent'
-
-  // 0, 1: 晴/少云 -> 橙色
   if ([0, 1].includes(code))
     return `${base} via-orange-100/70 to-orange-50/30 dark:via-orange-400/20 dark:to-orange-400/5`
-
-  // 2: 多云 -> 浅蓝
   if (code === 2)
     return `${base} via-sky-100/70 to-sky-50/30 dark:via-sky-400/20 dark:to-sky-400/5`
-
-  // 3, 45, 48: 阴/雾 -> 灰色
   if ([3, 45, 48].includes(code))
     return `${base} via-gray-200/70 to-gray-100/30 dark:via-gray-600/20 dark:to-gray-600/5`
-
-  // 51-67, 80-82: 雨 -> 模拟雨滴 (使用 CSS class + 内部渐变)
   if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code))
     return 'weather-bg-rain'
-
-  // 71-77, 85-86: 雪 -> 冰蓝
   if ([71, 73, 75, 77, 85, 86].includes(code))
     return `${base} via-cyan-100/70 to-cyan-50/30 dark:via-cyan-400/20 dark:to-cyan-400/5`
-
-  // 95-99: 雷暴 -> 紫色
   if ([95, 96, 99].includes(code))
     return `${base} via-purple-100/70 to-purple-50/30 dark:via-purple-400/20 dark:to-purple-400/5`
-
   return ''
 }
 
-// --- 图表绘制逻辑 (保持原逻辑) ---
-// --- 图表绘制逻辑 (保持原逻辑) ---
+// --- 图表绘制逻辑 ---
 function getControlPoint(current: number[], previous: number[], next: number[], reverse = false) {
   const p = previous || current
   const n = next || current
@@ -165,10 +134,7 @@ const chartData = computed(() => {
   if (!data.length || !rawHourly)
     return { linePath: '', areaPath: '', yesterdayLinePath: '', points: [] }
 
-  // 确定起始索引
   const startIndex = rawHourly.time.findIndex(t => dayjs(t).isSame(dayjs(data[0]!.time)))
-
-  // 计算温度范围
   const todayTemps = data.map(d => d.temp)
   const yesterdayTemps = data.map((_, i) => rawHourly.temperature_2m[startIndex + i - 24]).filter(t => t !== undefined) as number[]
 
@@ -176,25 +142,19 @@ const chartData = computed(() => {
   const minTemp = Math.min(...allTemps)
   const maxTemp = Math.max(...allTemps)
   const range = maxTemp - minTemp || 1
-
-  // 核心修改：计算可用绘图区域，预留底部 CONTENT_HEIGHT
   const availableHeight = CHART_HEIGHT - CONTENT_HEIGHT - TOP_PADDING
 
-  // 坐标映射：最大值在顶部(TOP_PADDING)，最小值在底部(CHART_HEIGHT - CONTENT_HEIGHT)
   const getPointY = (temp: number) => {
-    // 温度越高 y 越小
     const ratio = (temp - minTemp) / range
     return CHART_HEIGHT - CONTENT_HEIGHT - (ratio * availableHeight)
   }
 
-  // 计算点位
   const points = data.map((d, i) => [i * COLUMN_WIDTH + (COLUMN_WIDTH / 2), getPointY(d.temp)])
   const yesterdayPoints = data.map((_, i) => {
     const yTemp = rawHourly.temperature_2m[startIndex + i - 24]
     return yTemp !== undefined ? [i * COLUMN_WIDTH + (COLUMN_WIDTH / 2), getPointY(yTemp)] : null
   }).filter(p => p !== null) as number[][]
 
-  // 生成路径
   const generatePath = (pts: number[][]) => {
     if (!pts.length)
       return ''
@@ -210,21 +170,52 @@ const chartData = computed(() => {
 
   const linePath = generatePath(points)
   const yesterdayLinePath = generatePath(yesterdayPoints)
-  // 闭合路径用于 ClipPath：从线条结束 -> 右下角 -> 左下角 -> 闭合
   const areaPath = `${linePath} L ${totalContentWidth.value},${CHART_HEIGHT} L 0,${CHART_HEIGHT} Z`
 
   return { linePath, areaPath, yesterdayLinePath, points }
 })
 
-// --- 激活状态计算 ---
-// 不再计算偏移量，而是根据 scrollLeft 计算当前位于“固定线”下的数据索引
+// --- 动态指示器位置与激活状态 ---
+const indicatorX = computed(() => {
+  // 如果没有宽度信息，默认居左
+  if (!containerWidth.value || !totalContentWidth.value)
+    return LABEL_WIDTH + (COLUMN_WIDTH / 2)
+
+  // 计算最大滚动距离
+  const maxScroll = totalContentWidth.value - containerWidth.value
+
+  // 如果内容宽度小于容器宽度，默认居中或保持逻辑（这里保持居左逻辑直到内容溢出）
+  if (maxScroll <= 0)
+    return LABEL_WIDTH + (COLUMN_WIDTH / 2)
+
+  // 计算当前滚动进度 (0 ~ 1)
+  const progress = Math.min(Math.max(scrollLeft.value / maxScroll, 0), 1)
+
+  // 指示器行程范围：
+  // 起点: 左侧 label 后第 0.5 个 column 处
+  // 终点: 容器最右侧减去 0.5 个 column 处
+  // 可移动的总距离 = 容器宽度 - 1个列宽
+  const travelDist = containerWidth.value - COLUMN_WIDTH
+  const startX = LABEL_WIDTH + (COLUMN_WIDTH / 2)
+
+  return startX + (progress * travelDist)
+})
+
 const activeState = computed(() => {
   if (!hourlyData.value.length)
     return { index: 0, item: null, y: 0 }
 
-  // 计算当前滚动了多少个完整的列
-  // Math.round 确保滚动超过一半时切换到下一个
-  let index = Math.round(scrollLeft.value / COLUMN_WIDTH)
+  // 核心变更：激活项不再仅由 scrollLeft 决定，
+  // 而是由 scrollLeft (已滚动的距离) + indicatorOffset (指示器在可视区域内的偏移) 共同决定
+
+  // 计算指示器相对于滚动容器左侧的偏移量
+  const indicatorOffsetInView = indicatorX.value - LABEL_WIDTH
+
+  // 指示器在整个长图表中的绝对 X 坐标
+  const absoluteX = scrollLeft.value + indicatorOffsetInView
+
+  // 计算命中的索引
+  let index = Math.round(absoluteX / COLUMN_WIDTH)
 
   // 边界保护
   if (index < 0)
@@ -232,8 +223,6 @@ const activeState = computed(() => {
   if (index >= hourlyData.value.length)
     index = hourlyData.value.length - 1
 
-  // 获取该点的 Y 坐标 (用于定位圆圈)
-  // 注意：points 是对应整个长图表的坐标，我们需要 Y 值，X 值在这里不重要
   const point = chartData.value.points[index]
   const y = point ? point[1] : 0
 
@@ -254,33 +243,48 @@ const activeState = computed(() => {
       <span class="text-xs text-gray-400">滑动查看趋势</span>
     </div>
 
-    <div class="h-[320px] w-full relative">
+    <div class="w-full relative">
       <div class="rounded-xl pointer-events-none inset-0 absolute z-30 overflow-hidden">
         <div
           v-if="activeState.item"
-          class="right-2 top-2 absolute z-40"
+          class="pointer-events-none absolute z-40"
+          :style="{
+            left: `${indicatorX}px`,
+            top: '10px',
+            transform: 'translateX(-50%)',
+          }"
         >
-          <div class="text-white p-3 border border-white/10 rounded-xl bg-[#10b981]/90 flex flex-col min-w-[110px] shadow-lg transition-all duration-300 items-center backdrop-blur-sm">
-            <div class="text-xs font-medium mb-1 opacity-95 flex gap-1 whitespace-nowrap items-center">
-              <span>{{ dayjs(activeState.item.time).format('HH:mm') }}</span>
-              <span>{{ getWeatherName(activeState.item.code) }}</span>
+          <div class="px-3 py-2 text-center border border-gray-100 rounded-xl bg-white/90 min-w-[100px] shadow-lg backdrop-blur-md dark:border-gray-700 dark:bg-gray-800/90">
+            <!-- 第一行：日期 / 时间 / 天气 -->
+            <div class="text-xs text-gray-500 mb-1 flex gap-1.5 whitespace-nowrap items-center justify-center dark:text-gray-400">
+              <span>{{ dayjs(activeState.item.time).format('M/D') }}</span>
+              <span>{{ dayjs(activeState.item.time).format('H') }}点</span>
+              <span class="text-gray-700 font-medium dark:text-gray-200">{{ getWeatherName(activeState.item.code) }}</span>
             </div>
 
-            <div class="mb-1 flex gap-1 items-end">
-              <span class="text-2xl leading-none tracking-tighter font-bold">{{ formatTemperature(activeState.item.temp) }}</span>
-            </div>
+            <!-- 第二行：温度 / 对比 -->
+            <div class="flex gap-2 items-center justify-center">
+              <span class="text-2xl text-gray-800 leading-none tracking-tight font-bold dark:text-white">
+                {{ formatTemperature(activeState.item.temp) }}
+              </span>
 
-            <div class="flex flex-col gap-1 w-full">
+              <!-- 对比徽章 -->
               <div
-                v-if="activeState.item.tempDiff !== null && Math.abs(Math.round(activeState.item.tempDiff)) !== 0"
-                class="text-[10px] px-1.5 py-0.5 rounded bg-black/10 flex w-full items-center justify-center"
+                v-if="activeState.item.tempDiff !== null"
+                class="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-gray-100 flex items-center dark:bg-gray-700/50"
               >
-                <span class="opacity-70">比昨日</span>
-                <span class="mx-0.5" :class="activeState.item.tempDiff > 0 ? 'i-carbon-arrow-up text-orange-300' : 'i-carbon-arrow-down text-blue-300'" />
-                <span class="font-bold">{{ Math.abs(Math.round(activeState.item.tempDiff)) }}°</span>
-              </div>
-              <div v-else-if="activeState.item.tempDiff !== null" class="text-[10px] px-1.5 py-0.5 rounded bg-black/10 flex w-full items-center justify-center">
-                <span class="opacity-70">与昨日持平</span>
+                <span v-if="Math.abs(Math.round(activeState.item.tempDiff)) === 0" class="text-gray-400">
+                  持平
+                </span>
+                <template v-else>
+                  <div
+                    class="i-carbon-arrow-up text-[10px] mr-0.5"
+                    :class="activeState.item.tempDiff > 0 ? 'text-orange-500 rotate-0' : 'text-blue-500 rotate-180'"
+                  />
+                  <span :class="activeState.item.tempDiff > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-blue-600 dark:text-blue-400'">
+                    {{ Math.abs(Math.round(activeState.item.tempDiff)) }}°
+                  </span>
+                </template>
               </div>
             </div>
           </div>
@@ -288,8 +292,8 @@ const activeState = computed(() => {
 
         <!-- 指示器位置：动态计算 -->
         <div
-          class="flex flex-col items-center bottom-0 top-0 absolute"
-          :style="{ left: `${INDICATOR_LEFT}px` }"
+          class="flex flex-col transition-none items-center bottom-0 top-0 absolute"
+          :style="{ left: `${indicatorX}px` }"
         >
           <div
             class="border-[3px] border-[#10b981] rounded-full bg-white h-3 w-3 shadow-sm transition-[top] duration-150 ease-out absolute z-10"
@@ -322,8 +326,8 @@ const activeState = computed(() => {
           >
             <span>温度</span>
           </div>
-          <!-- 空气标签 - 对应 h-6 + mt-1 -->
-          <div class="mt-1 flex h-6 items-center justify-center">
+          <!-- 空气标签 - 对应 h-6 + mt-0 -->
+          <div class="mt-0 flex h-6 items-center justify-center">
             <span>空气</span>
           </div>
           <!-- 风力标签 - 对应 h-6 + mt-2 -->
@@ -477,6 +481,29 @@ const activeState = computed(() => {
               </div>
             </div>
           </div>
+        </div>
+        <!-- 右侧固定标签列 -->
+        <div
+          class="text-[10px] text-gray-400 font-medium flex flex-shrink-0 flex-col"
+          :style="{ width: `${LABEL_WIDTH}px` }"
+        >
+          <!-- 温度/趋势标签 - 动态高度 -->
+          <div
+            class="flex items-center justify-center"
+            :style="{ height: `${CHART_HEIGHT}px` }"
+          >
+            <span>温度</span>
+          </div>
+          <!-- 空气标签 - 对应 h-6 + mt-0 -->
+          <div class="mt-0 flex h-6 items-center justify-center">
+            <span>空气</span>
+          </div>
+          <!-- 风力标签 - 对应 h-6 + mt-2 -->
+          <div class="mt-2 flex h-6 items-center justify-center">
+            <span>风力</span>
+          </div>
+          <!-- 时间轴留白 - 对应底部时间区域 -->
+          <div class="flex-1" />
         </div>
       </div>
     </div>
