@@ -1,7 +1,7 @@
 {
   "type": "module",
   "private": true,
-  "packageManager": "pnpm@10.30.2",
+  "packageManager": "pnpm@10.33.0",
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
@@ -45,7 +45,8 @@
     "vue-draggable-plus": "catalog:frontend",
     "vue-tsc": "catalog:dev",
     "xlsx": "catalog:frontend",
-    "zod": "catalog:utils"
+    "zod": "catalog:utils",
+    "secure-exec": "catalog:backend"
   },
   "resolutions": {
     "chokidar": "^5.0.0",

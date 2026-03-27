@@ -28,7 +28,6 @@ export default defineNuxtConfig({
       ],
     },
   },
-
   colorMode: {
     classSuffix: '',
   },
@@ -60,6 +59,19 @@ export default defineNuxtConfig({
     experimental: {
       database: true,
       tasks: true,
+    },
+  },
+  vite: {
+    optimizeDeps: {
+      include: [
+        '@vue/devtools-core',
+        '@vue/devtools-kit',
+        'dayjs', // CJS
+        'dayjs/plugin/relativeTime', // CJS
+        'dayjs/plugin/updateLocale', // CJS
+        'dayjs/plugin/utc', // CJS
+        'dayjs/locale/zh-cn', // CJS
+      ],
     },
   },
 
