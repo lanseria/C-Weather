@@ -164,7 +164,7 @@ const chartData = computed(() => {
       const cp2 = getControlPoint(pts[i + 1]!, pts[i + 2] || pts[i + 1]!, pts[i]!, true)
       path += ` C ${cp1[0]},${cp1[1]} ${cp2[0]},${cp2[1]} ${pts[i + 1]![0]},${pts[i + 1]![1]}`
     }
-    path += ` L ${totalContentWidth.value},${pts[pts.length - 1]![1]}`
+    path += ` L ${totalContentWidth.value},${pts.at(-1)![1]}`
     return path
   }
 
