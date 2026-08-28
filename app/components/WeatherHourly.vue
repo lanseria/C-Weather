@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { useElementSize, useScroll } from '@vueuse/core'
-import dayjs from 'dayjs'
+import { format, getHours, isSameHour, parseISO } from 'date-fns'
 import { useWeatherStore } from '~/stores/weather'
 
 const weatherStore = useWeatherStore()
 // 假设这些工具函数已存在
 const { getWeatherIcon, getAQIDescription, getWeatherName, getWindLevel, formatWindSpeed, formatTemperature } = useWeatherUtils()
+
+const hourOf = (time: string) => getHours(parseISO(time))
 
 // --- 常量配置 ---
 const COLUMN_WIDTH = 36
@@ -46,8 +48,7 @@ const hourlyData = computed(() => {
   if (!data)
     return []
 
-  const currentHour = dayjs().startOf('hour')
-  const startIndex = data.time.findIndex(t => dayjs(t).isSame(currentHour))
+  const startIndex = data.time.findIndex(t => isSameHour(parseISO(t), new Date()))
 
   if (startIndex === -1)
     return []
@@ -134,7 +135,7 @@ const chartData = computed(() => {
   if (!data.length || !rawHourly)
     return { linePath: '', areaPath: '', yesterdayLinePath: '', points: [] }
 
-  const startIndex = rawHourly.time.findIndex(t => dayjs(t).isSame(dayjs(data[0]!.time)))
+  const startIndex = rawHourly.time.findIndex(t => isSameHour(parseISO(t), parseISO(data[0]!.time)))
   const todayTemps = data.map(d => d.temp)
   const yesterdayTemps = data.map((_, i) => rawHourly.temperature_2m[startIndex + i - 24]).filter(t => t !== undefined) as number[]
 
@@ -257,8 +258,8 @@ const activeState = computed(() => {
           <div class="px-3 py-2 text-center border border-gray-100 rounded-xl bg-white/90 min-w-[100px] shadow-lg backdrop-blur-md dark:border-gray-700 dark:bg-gray-800/90">
             <!-- 第一行：日期 / 时间 / 天气 -->
             <div class="text-xs text-gray-500 mb-1 flex gap-1.5 whitespace-nowrap items-center justify-center dark:text-gray-400">
-              <span>{{ dayjs(activeState.item.time).format('M/D') }}</span>
-              <span>{{ dayjs(activeState.item.time).format('H') }}点</span>
+              <span>{{ format(parseISO(activeState.item.time), 'M/d') }}</span>
+              <span>{{ format(parseISO(activeState.item.time), 'H') }}点</span>
               <span class="text-gray-700 font-medium dark:text-gray-200">{{ getWeatherName(activeState.item.code) }}</span>
             </div>
 
@@ -457,23 +458,23 @@ const activeState = computed(() => {
                 >
                   <!-- 仅展示：第一个(现在)、0点、以及每隔4小时的点 -->
                   <div
-                    v-if="index === 0 || [0, 4, 8, 12, 16, 20].includes(dayjs(item.time).hour())"
+                    v-if="index === 0 || [0, 4, 8, 12, 16, 20].includes(hourOf(item.time))"
                     class="flex flex-col items-center"
                   >
                     <span
                       class="font-medium whitespace-nowrap"
                       :class="[
-                        index === 0 || dayjs(item.time).hour() === 0
+                        index === 0 || hourOf(item.time) === 0
                           ? 'text-primary font-bold'
                           : 'text-gray-400',
                       ]"
                     >
                       <template v-if="index === 0">现在</template>
-                      <template v-else-if="dayjs(item.time).hour() === 0">
-                        {{ dayjs(item.time).format('MM/DD') }}
+                      <template v-else-if="hourOf(item.time) === 0">
+                        {{ format(parseISO(item.time), 'MM/dd') }}
                       </template>
                       <template v-else>
-                        {{ dayjs(item.time).format('HH:00') }}
+                        {{ format(parseISO(item.time), 'HH:mm') }}
                       </template>
                     </span>
                   </div>

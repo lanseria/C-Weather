@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import dayjs from 'dayjs'
+import { format, parseISO } from 'date-fns'
+import { zhCN } from 'date-fns/locale'
 import { useWeatherStore } from '~/stores/weather'
-import 'dayjs/locale/zh-cn'
 
 const weatherStore = useWeatherStore()
 const { getWeatherIcon, getAQIDescription, formatWindSpeed, formatTemperature, getWeatherName } = useWeatherUtils()
@@ -38,7 +38,7 @@ const dailyData = computed(() => {
         <div class="flex gap-3 items-center">
           <div :class="getWeatherIcon(item.code)" class="text-3xl text-primary flex-shrink-0" />
           <div class="flex flex-col">
-            <span class="text-sm font-medium">{{ dayjs(item.time).locale('zh-cn').format('MM/DD dddd') }}</span>
+            <span class="text-sm font-medium">{{ format(parseISO(item.time), 'MM/dd EEEE', { locale: zhCN }) }}</span>
             <span class="text-xs text-gray-500 dark:text-gray-400">{{ getWeatherName(item.code) }}</span>
           </div>
         </div>

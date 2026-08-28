@@ -7,7 +7,6 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@nuxtjs/color-mode',
     '@nuxt/eslint',
-    'dayjs-nuxt',
     '@nuxtjs/mcp-toolkit',
   ],
 
@@ -66,11 +65,6 @@ export default defineNuxtConfig({
       include: [
         '@vue/devtools-core',
         '@vue/devtools-kit',
-        'dayjs', // CJS
-        'dayjs/plugin/relativeTime', // CJS
-        'dayjs/plugin/updateLocale', // CJS
-        'dayjs/plugin/utc', // CJS
-        'dayjs/locale/zh-cn', // CJS
       ],
     },
   },

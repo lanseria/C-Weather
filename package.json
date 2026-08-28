@@ -1,7 +1,7 @@
 {
   "type": "module",
   "private": true,
-  "packageManager": "pnpm@10.33.0",
+  "packageManager": "pnpm@11.24.0",
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
@@ -23,11 +23,12 @@
     "@types/pg": "catalog:dev",
     "@unocss/eslint-config": "catalog:build",
     "@unocss/nuxt": "catalog:build",
+    "@unocss/preset-web-fonts": "catalog:build",
     "@unocss/reset": "catalog:frontend",
     "@vueuse/core": "catalog:frontend",
     "@vueuse/nuxt": "catalog:build",
     "argon2": "catalog:backend",
-    "dayjs-nuxt": "catalog:dev",
+    "date-fns": "catalog:frontend",
     "drizzle-kit": "catalog:backend",
     "drizzle-orm": "catalog:backend",
     "eslint": "catalog:dev",
@@ -38,6 +39,7 @@
     "pg": "catalog:backend",
     "pinia": "catalog:frontend",
     "postgres": "catalog:backend",
+    "secure-exec": "catalog:backend",
     "typescript": "catalog:dev",
     "undici": "catalog:backend",
     "unocss": "catalog:build",
@@ -45,8 +47,7 @@
     "vue-draggable-plus": "catalog:frontend",
     "vue-tsc": "catalog:dev",
     "xlsx": "catalog:frontend",
-    "zod": "catalog:utils",
-    "secure-exec": "catalog:backend"
+    "zod": "catalog:utils"
   },
   "resolutions": {
     "chokidar": "^5.0.0",

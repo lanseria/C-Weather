@@ -1,3 +1,13 @@
+shellEmulator: true
+strictPeerDependencies: false
+
+trustPolicy: no-downgrade
+
+trustPolicyExclude:
+  - chokidar@4.0.3
+  - semver@6.3.1
+  - tinyclip@0.1.13
+
 packages: []
 
 catalogs:
@@ -14,11 +24,11 @@ catalogs:
     undici: ^7.24.6
   build:
     '@nuxt/eslint': ^1.15.2
-    '@nuxt/kit': ^4.4.2
     '@nuxtjs/color-mode': ^4.0.0
     '@pinia/nuxt': ^0.11.3
     '@unocss/eslint-config': ^66.6.7
     '@unocss/nuxt': ^66.6.7
+    '@unocss/preset-web-fonts': ^66.8.1
     '@vueuse/nuxt': ^14.2.1
     nuxt: ^4.4.2
     unocss: ^66.6.7
@@ -27,7 +37,6 @@ catalogs:
   dev:
     '@antfu/eslint-config': ^7.7.3
     '@types/pg': ^8.20.0
-    dayjs-nuxt: ^2.1.11
     eslint: ^9.39.4
     eslint-plugin-format: ^2.0.1
     typescript: ^5.9.3
@@ -35,12 +44,10 @@ catalogs:
   frontend:
     '@unocss/reset': ^66.6.7
     '@vueuse/core': ^14.2.1
-    echarts: ^6.0.0
-    nuxt-echarts: ^1.0.1
+    date-fns: ^4.4.0
     pinia: ^3.0.4
     vue: ^3.5.31
     vue-draggable-plus: ^0.6.1
-    vue-echarts: ^8.0.1
     xlsx: ^0.18.5
   icons:
     '@iconify-json/carbon': ^1.2.20
@@ -49,11 +56,9 @@ catalogs:
   utils:
     zod: ^4.3.6
 
-onlyBuiltDependencies:
-  - '@parcel/watcher'
-  - esbuild
-  - unrs-resolver
-
-shellEmulator: true
-
-trustPolicy: no-downgrade
+allowBuilds:
+  '@parcel/watcher': true
+  argon2: true
+  esbuild: true
+  isolated-vm: true
+  unrs-resolver: true
