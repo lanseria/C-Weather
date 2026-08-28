@@ -12,7 +12,6 @@ export default antfu(
       '**/node_modules/**',
       '**/coverage/**',
       '**/cypress/**',
-      '**/server/database/drizzle/meta/**.json',
     ],
     vue: {
       overrides: {
