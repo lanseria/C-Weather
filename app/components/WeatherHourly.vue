@@ -15,6 +15,7 @@ const CHART_HEIGHT = 260 // 增加高度以容纳更多细节
 const CONTENT_HEIGHT = 70 // 底部预留给图标和文字的高度
 const TOP_PADDING = 80 // 顶部预留高度 (增加到 80px 给 Tooltip 腾出空间)
 const LABEL_WIDTH = 48
+const DOT_RADIUS = 9 // 指示器圆点（含边框）半径，用于上下连接线的对齐
 
 // --- 容器引用 ---
 const containerRef = ref<HTMLElement | null>(null)
@@ -116,24 +117,81 @@ function getWeatherBackgroundClass(code: number) {
   return ''
 }
 
-// --- 图表绘制逻辑 ---
-function getControlPoint(current: number[], previous: number[], next: number[], reverse = false) {
-  const p = previous || current
-  const n = next || current
-  const smoothing = 0.2
-  const lineX = n[0]! - p[0]!
-  const lineY = n[1]! - p[1]!
-  const length = Math.sqrt(lineX * lineX + lineY * lineY)
-  const angle = Math.atan2(lineY, lineX) + (reverse ? Math.PI : 0)
-  const controlLength = length * smoothing
-  return [current[0]! + Math.cos(angle) * controlLength, current[1]! + Math.sin(angle) * controlLength]
+// --- 图表绘制逻辑：单调三次插值 (Fritsch–Carlson) ---
+// 切线在各数据点处连续，且不会在峰谷附近过冲；
+// 实线/虚线都比固定平滑系数的样条更顺滑，也更符合温度连续变化的直觉
+// 斜率单位统一为“每列的 y 像素变化”，与等间距列宽配合
+function buildMonotoneSlopes(ys: number[]) {
+  const n = ys.length
+  const slopes = Array.from<number>({ length: n }).fill(0)
+  if (n < 2)
+    return slopes
+
+  const deltas = Array.from({ length: n - 1 }, (_, i) => ys[i + 1]! - ys[i]!)
+
+  for (let i = 1; i < n - 1; i++) {
+    // 局部极值处切线归零，曲线平滑绕过峰谷而不是冲过再折返
+    slopes[i] = deltas[i - 1]! * deltas[i]! <= 0 ? 0 : (deltas[i - 1]! + deltas[i]!) / 2
+  }
+
+  // Fritsch–Carlson 约束：限制切线模长，保证每一段曲线都单调
+  for (let i = 0; i < n - 1; i++) {
+    if (deltas[i]! === 0) {
+      slopes[i] = 0
+      slopes[i + 1] = 0
+      continue
+    }
+    const a = slopes[i]! / deltas[i]!
+    const b = slopes[i + 1]! / deltas[i]!
+    const norm = Math.hypot(a, b)
+    if (norm > 3) {
+      slopes[i] = (3 * a * deltas[i]!) / norm
+      slopes[i + 1] = (3 * b * deltas[i]!) / norm
+    }
+  }
+  return slopes
+}
+
+// Hermite 样条转三次贝塞尔路径；offset 为首个数据点所在列（昨日数据可能缺前几列）
+function splineToPath(offset: number, ys: number[], slopes: number[]) {
+  if (!ys.length)
+    return ''
+  const xOf = (i: number) => (offset + i) * COLUMN_WIDTH + COLUMN_WIDTH / 2
+  let path = `M 0,${ys[0]!} L ${xOf(0)},${ys[0]!}`
+  for (let i = 0; i < ys.length - 1; i++) {
+    const x = xOf(i)
+    const nx = xOf(i + 1)
+    path += ` C ${x + COLUMN_WIDTH / 3},${ys[i]! + slopes[i]! / 3} ${nx - COLUMN_WIDTH / 3},${ys[i + 1]! - slopes[i + 1]! / 3} ${nx},${ys[i + 1]!}`
+  }
+  return `${path} L ${totalContentWidth.value},${ys.at(-1)!}`
+}
+
+// 按内容区 x 坐标在样条上连续取样，让指示器圆点滚动时始终贴合曲线
+function sampleSplineY(ys: number[], slopes: number[], x: number) {
+  if (!ys.length)
+    return 0
+  const t = (x - COLUMN_WIDTH / 2) / COLUMN_WIDTH
+  if (t <= 0)
+    return ys[0]!
+  if (t >= ys.length - 1)
+    return ys.at(-1)!
+  const i = Math.floor(t)
+  const f = t - i
+  const f2 = f * f
+  const f3 = f2 * f
+  return (
+    (2 * f3 - 3 * f2 + 1) * ys[i]!
+    + (f3 - 2 * f2 + f) * slopes[i]!
+    + (-2 * f3 + 3 * f2) * ys[i + 1]!
+    + (f3 - f2) * slopes[i + 1]!
+  )
 }
 
 const chartData = computed(() => {
   const data = hourlyData.value
   const rawHourly = weatherStore.weatherData?.hourly
   if (!data.length || !rawHourly)
-    return { linePath: '', areaPath: '', yesterdayLinePath: '', points: [] }
+    return { linePath: '', areaPath: '', yesterdayLinePath: '', sampleY: null }
 
   const startIndex = rawHourly.time.findIndex(t => isSameHour(parseISO(t), parseISO(data[0]!.time)))
   const todayTemps = data.map(d => d.temp)
@@ -150,30 +208,40 @@ const chartData = computed(() => {
     return CHART_HEIGHT - CONTENT_HEIGHT - (ratio * availableHeight)
   }
 
-  const points = data.map((d, i) => [i * COLUMN_WIDTH + (COLUMN_WIDTH / 2), getPointY(d.temp)])
-  const yesterdayPoints = data.map((_, i) => {
-    const yTemp = rawHourly.temperature_2m[startIndex + i - 24]
-    return yTemp !== undefined ? [i * COLUMN_WIDTH + (COLUMN_WIDTH / 2), getPointY(yTemp)] : null
-  }).filter(p => p !== null) as number[][]
+  const todayYs = data.map(d => getPointY(d.temp))
 
-  const generatePath = (pts: number[][]) => {
-    if (!pts.length)
-      return ''
-    let path = `M 0,${pts[0]![1]} L ${pts[0]![0]},${pts[0]![1]}`
-    for (let i = 0; i < pts.length - 1; i++) {
-      const cp1 = getControlPoint(pts[i]!, pts[i - 1] || pts[i]!, pts[i + 1]!)
-      const cp2 = getControlPoint(pts[i + 1]!, pts[i + 2] || pts[i + 1]!, pts[i]!, true)
-      path += ` C ${cp1[0]},${cp1[1]} ${cp2[0]},${cp2[1]} ${pts[i + 1]![0]},${pts[i + 1]![1]}`
+  // 昨日温度缺少今天 0 点前的部分列，记录其起始列偏移
+  let yesterdayOffset = 0
+  const yesterdayYs: number[] = []
+  for (let i = 0; i < data.length; i++) {
+    const temp = rawHourly.temperature_2m[startIndex + i - 24]
+    if (temp === undefined) {
+      yesterdayOffset = i + 1
+      continue
     }
-    path += ` L ${totalContentWidth.value},${pts.at(-1)![1]}`
-    return path
+    yesterdayYs.push(getPointY(temp))
   }
 
-  const linePath = generatePath(points)
-  const yesterdayLinePath = generatePath(yesterdayPoints)
+  const todaySlopes = buildMonotoneSlopes(todayYs)
+  const yesterdaySlopes = buildMonotoneSlopes(yesterdayYs)
+  // 首尾切线归零，与路径两端的水平延伸线平滑衔接
+  for (const slopes of [todaySlopes, yesterdaySlopes]) {
+    if (slopes.length > 1) {
+      slopes[0] = 0
+      slopes[slopes.length - 1] = 0
+    }
+  }
+
+  const linePath = splineToPath(0, todayYs, todaySlopes)
+  const yesterdayLinePath = splineToPath(yesterdayOffset, yesterdayYs, yesterdaySlopes)
   const areaPath = `${linePath} L ${totalContentWidth.value},${CHART_HEIGHT} L 0,${CHART_HEIGHT} Z`
 
-  return { linePath, areaPath, yesterdayLinePath, points }
+  return {
+    linePath,
+    areaPath,
+    yesterdayLinePath,
+    sampleY: (x: number) => sampleSplineY(todayYs, todaySlopes, x),
+  }
 })
 
 // --- 动态指示器位置与激活状态 ---
@@ -202,30 +270,32 @@ const indicatorX = computed(() => {
   return startX + (progress * travelDist)
 })
 
+// 提示框在两端向内收，避免被指示器层的 overflow-hidden 裁切
+const tooltipX = computed(() => {
+  const overlayWidth = containerWidth.value + LABEL_WIDTH * 2
+  if (!overlayWidth)
+    return indicatorX.value
+  const margin = 62 // 提示框 min-w-[100px] 的一半再加余量
+  return Math.min(Math.max(indicatorX.value, margin), Math.max(margin, overlayWidth - margin))
+})
+
 const activeState = computed(() => {
   if (!hourlyData.value.length)
     return { index: 0, item: null, y: 0 }
 
-  // 核心变更：激活项不再仅由 scrollLeft 决定，
-  // 而是由 scrollLeft (已滚动的距离) + indicatorOffset (指示器在可视区域内的偏移) 共同决定
-
-  // 计算指示器相对于滚动容器左侧的偏移量
+  // 激活项由 scrollLeft（已滚动距离）与指示器在可视区域内的偏移共同决定。
+  // 列中心位于 (i + 0.5) * COLUMN_WIDTH，先减去半列宽再四舍五入，
+  // 使高亮切换恰好发生在指示器越过列中心的瞬间
   const indicatorOffsetInView = indicatorX.value - LABEL_WIDTH
-
-  // 指示器在整个长图表中的绝对 X 坐标
   const absoluteX = scrollLeft.value + indicatorOffsetInView
 
-  // 计算命中的索引
-  let index = Math.round(absoluteX / COLUMN_WIDTH)
+  const index = Math.min(
+    Math.max(Math.round((absoluteX - COLUMN_WIDTH / 2) / COLUMN_WIDTH), 0),
+    hourlyData.value.length - 1,
+  )
 
-  // 边界保护
-  if (index < 0)
-    index = 0
-  if (index >= hourlyData.value.length)
-    index = hourlyData.value.length - 1
-
-  const point = chartData.value.points[index]
-  const y = point ? point[1] : 0
+  // 圆点 y 直接在样条上按 absoluteX 连续取样，滚动时始终贴合曲线
+  const y = chartData.value.sampleY ? chartData.value.sampleY(absoluteX) : 0
 
   return {
     index,
@@ -250,7 +320,7 @@ const activeState = computed(() => {
           v-if="activeState.item"
           class="pointer-events-none absolute z-40"
           :style="{
-            left: `${indicatorX}px`,
+            left: `${tooltipX}px`,
             top: '10px',
             transform: 'translateX(-50%)',
           }"
@@ -291,24 +361,28 @@ const activeState = computed(() => {
           </div>
         </div>
 
-        <!-- 指示器位置：动态计算 -->
+        <!-- 指示器位置：动态计算；圆点中心精确落在曲线上，连接线与圆点边缘对齐 -->
         <div
-          class="flex flex-col transition-none items-center bottom-0 top-0 absolute"
+          class="flex flex-col items-center bottom-0 top-0 absolute"
           :style="{ left: `${indicatorX}px` }"
         >
           <div
-            class="border-[3px] border-[#10b981] rounded-full bg-white h-3 w-3 shadow-sm transition-[top] duration-150 ease-out absolute z-10"
-            :style="{ top: `${activeState.y! - 6}px` }"
+            class="border-[#10b981] border-[3px] rounded-full bg-white h-3 w-3 absolute z-10"
+            :style="{
+              top: `${activeState.y}px`,
+              transform: 'translateY(-50%)',
+              boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.15)',
+            }"
           />
 
           <div
-            class="opacity-50 w-[1.5px] transition-[top] duration-150 ease-out bottom-0 absolute from-[#10b981] to-transparent bg-gradient-to-b"
-            :style="{ top: `${activeState.y! + 6}px` }"
+            class="opacity-50 w-[1.5px] bottom-0 absolute from-[#10b981] to-transparent bg-gradient-to-b"
+            :style="{ top: `${activeState.y + DOT_RADIUS}px` }"
           />
 
           <div
-            class="border-l border-[#10b981]/30 border-dashed w-[1px] transition-[height] duration-150 ease-out top-0 absolute"
-            :style="{ height: `${activeState.y! - 6}px` }"
+            class="border-l border-[#10b981]/30 border-dashed w-[1px] top-0 absolute"
+            :style="{ height: `${Math.max(activeState.y - DOT_RADIUS, 0)}px` }"
           />
         </div>
       </div>

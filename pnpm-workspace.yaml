@@ -30,7 +30,7 @@ catalogs:
     '@antfu/eslint-config': ^9.3.0
     eslint: ^10.9.1
     eslint-plugin-format: ^2.0.1
-    typescript: ^7.0.2
+    typescript: ^6.0.3
     vue-tsc: ^3.3.11
   frontend:
     '@vueuse/core': ^14.4.0
