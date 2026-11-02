@@ -35,11 +35,13 @@ export default defineConfig({
     },
   },
   shortcuts: [
-    // 按钮样式更新为使用 primary 色
-    ['btn', 'px-4 py-2.5 rounded-lg inline-flex items-center justify-center gap-2 bg-primary text-white cursor-pointer transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:opacity-50 shadow-sm font-medium'],
-    ['icon-btn', 'inline-block cursor-pointer select-none opacity-75 transition duration-200 ease-in-out hover:opacity-100 hover:text-primary'],
+    // iOS 液态玻璃面板：半透明 + 背景模糊 + 高光描边
+    ['glass', 'bg-white/10 backdrop-blur-2xl backdrop-saturate-150 border border-white/20 rounded-2xl shadow-[inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-1px_0_rgba(255,255,255,0.06),0_8px_32px_rgba(0,0,0,0.18)]'],
+    // 按钮样式：玻璃胶囊
+    ['btn', 'px-4 py-2.5 rounded-xl inline-flex items-center justify-center gap-2 bg-white/15 text-white border border-white/20 cursor-pointer transition hover:bg-white/25 disabled:cursor-not-allowed disabled:bg-white/5 disabled:opacity-40 shadow-lg backdrop-blur-xl font-medium'],
+    ['icon-btn', 'inline-block cursor-pointer select-none text-white opacity-75 transition duration-200 ease-in-out hover:opacity-100'],
     // 统一的输入框样式
-    ['input-base', 'w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors text-sm'],
+    ['input-base', 'w-full px-4 py-2.5 bg-white/10 text-white placeholder-white/40 border border-white/20 rounded-xl focus:ring-2 focus:ring-white/30 focus:border-white/50 outline-none transition-colors text-sm backdrop-blur-xl'],
   ],
   presets: [
     presetWind4({
@@ -75,5 +77,6 @@ export default defineConfig({
     'bg-red-500',
     'bg-purple-500',
     'bg-red-900',
+    'bg-white/50',
   ],
 })

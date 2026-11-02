@@ -15,7 +15,6 @@
     "@iconify-json/tabler": "catalog:icons",
     "@iconify-json/wi": "catalog:icons",
     "@nuxt/eslint": "catalog:build",
-    "@nuxtjs/color-mode": "catalog:build",
     "@nuxtjs/mcp-toolkit": "catalog:backend",
     "@pinia/nuxt": "catalog:build",
     "@unocss/eslint-config": "catalog:build",

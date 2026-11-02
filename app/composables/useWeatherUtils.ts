@@ -65,7 +65,7 @@ export function useWeatherUtils() {
   const getAQIDescription = (aqi?: number | null) => {
     // 处理空值或无效值
     if (aqi === null || aqi === undefined)
-      return { text: '无数据', color: 'text-gray-400' }
+      return { text: '无数据', color: 'text-white/50' }
 
     const levels = [
       { max: 50, text: '优', color: 'text-green-500' },
@@ -119,7 +119,9 @@ export function useWeatherUtils() {
    */
   const getWeatherName = (code: number): string => {
   // 使用 in 操作符检查 key 是否存在，比 map[code] || '未知' 更严谨（防止 code 为 0 时逻辑判断失误）
-    return code in WEATHER_CODE_MAP ? WEATHER_CODE_MAP[code]! : '未知'
+    return code in WEATHER_CODE_MAP
+      ? WEATHER_CODE_MAP[code]!
+      : '未知'
   }
 
   /**

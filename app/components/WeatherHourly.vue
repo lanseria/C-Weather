@@ -57,7 +57,9 @@ const hourlyData = computed(() => {
   return data.time.slice(startIndex).map((time, i) => {
     const index = startIndex + i
     const yesterdayTemp = data.temperature_2m[index - 24]
-    const tempDiff = yesterdayTemp !== undefined ? data.temperature_2m[index]! - yesterdayTemp : null
+    const tempDiff = yesterdayTemp !== undefined
+      ? data.temperature_2m[index]! - yesterdayTemp
+      : null
 
     return {
       time,
@@ -103,17 +105,32 @@ const windGroups = computed(() => groupData(hourlyData.value, (a, b) => getWindL
 function getWeatherBackgroundClass(code: number) {
   const base = 'bg-gradient-to-t from-transparent'
   if ([0, 1].includes(code))
-    return `${base} via-orange-100/70 to-orange-50/30 dark:via-orange-400/20 dark:to-orange-400/5`
+    return `${base} via-orange-400/20 to-orange-400/5`
   if (code === 2)
-    return `${base} via-sky-100/70 to-sky-50/30 dark:via-sky-400/20 dark:to-sky-400/5`
+    return `${base} via-sky-400/20 to-sky-400/5`
   if ([3, 45, 48].includes(code))
-    return `${base} via-gray-200/70 to-gray-100/30 dark:via-gray-600/20 dark:to-gray-600/5`
-  if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code))
+    return `${base} via-white/15 to-white/5`
+  if ([
+    51,
+    53,
+    55,
+    56,
+    57,
+    61,
+    63,
+    65,
+    66,
+    67,
+    80,
+    81,
+    82,
+  ].includes(code)) {
     return 'weather-bg-rain'
+  }
   if ([71, 73, 75, 77, 85, 86].includes(code))
-    return `${base} via-cyan-100/70 to-cyan-50/30 dark:via-cyan-400/20 dark:to-cyan-400/5`
+    return `${base} via-cyan-400/20 to-cyan-400/5`
   if ([95, 96, 99].includes(code))
-    return `${base} via-purple-100/70 to-purple-50/30 dark:via-purple-400/20 dark:to-purple-400/5`
+    return `${base} via-purple-400/20 to-purple-400/5`
   return ''
 }
 
@@ -131,7 +148,9 @@ function buildMonotoneSlopes(ys: number[]) {
 
   for (let i = 1; i < n - 1; i++) {
     // 局部极值处切线归零，曲线平滑绕过峰谷而不是冲过再折返
-    slopes[i] = deltas[i - 1]! * deltas[i]! <= 0 ? 0 : (deltas[i - 1]! + deltas[i]!) / 2
+    slopes[i] = deltas[i - 1]! * deltas[i]! <= 0
+      ? 0
+      : (deltas[i - 1]! + deltas[i]!) / 2
   }
 
   // Fritsch–Carlson 约束：限制切线模长，保证每一段曲线都单调
@@ -190,14 +209,23 @@ function sampleSplineY(ys: number[], slopes: number[], x: number) {
 const chartData = computed(() => {
   const data = hourlyData.value
   const rawHourly = weatherStore.weatherData?.hourly
-  if (!data.length || !rawHourly)
-    return { linePath: '', areaPath: '', yesterdayLinePath: '', sampleY: null }
+  if (!data.length || !rawHourly) {
+    return {
+      linePath: '',
+      areaPath: '',
+      yesterdayLinePath: '',
+      sampleY: null,
+    }
+  }
 
   const startIndex = rawHourly.time.findIndex(t => isSameHour(parseISO(t), parseISO(data[0]!.time)))
   const todayTemps = data.map(d => d.temp)
   const yesterdayTemps = data.map((_, i) => rawHourly.temperature_2m[startIndex + i - 24]).filter(t => t !== undefined) as number[]
 
-  const allTemps = [...todayTemps, ...yesterdayTemps]
+  const allTemps = [
+    ...todayTemps,
+    ...yesterdayTemps,
+  ]
   const minTemp = Math.min(...allTemps)
   const maxTemp = Math.max(...allTemps)
   const range = maxTemp - minTemp || 1
@@ -295,7 +323,9 @@ const activeState = computed(() => {
   )
 
   // 圆点 y 直接在样条上按 absoluteX 连续取样，滚动时始终贴合曲线
-  const y = chartData.value.sampleY ? chartData.value.sampleY(absoluteX) : 0
+  const y = chartData.value.sampleY
+    ? chartData.value.sampleY(absoluteX)
+    : 0
 
   return {
     index,
@@ -308,10 +338,10 @@ const activeState = computed(() => {
 <template>
   <div v-if="hourlyData.length" class="group mt-6 select-none relative">
     <div class="mb-4 px-1 flex items-center justify-between">
-      <h3 class="text-lg font-semibold">
+      <h3 class="text-lg text-white font-semibold drop-shadow">
         逐小时预报
       </h3>
-      <span class="text-xs text-gray-400">滑动查看趋势</span>
+      <span class="text-xs text-white/50">滑动查看趋势</span>
     </div>
 
     <div class="w-full relative">
@@ -325,34 +355,34 @@ const activeState = computed(() => {
             transform: 'translateX(-50%)',
           }"
         >
-          <div class="px-3 py-2 text-center border border-gray-100 rounded-xl bg-white/90 min-w-[100px] shadow-lg backdrop-blur-md dark:border-gray-700 dark:bg-gray-800/90">
+          <div class="px-3 py-2 text-center border border-white/20 rounded-xl bg-black/40 min-w-[100px] shadow-lg backdrop-blur-xl">
             <!-- 第一行：日期 / 时间 / 天气 -->
-            <div class="text-xs text-gray-500 mb-1 flex gap-1.5 whitespace-nowrap items-center justify-center dark:text-gray-400">
+            <div class="text-xs text-white/60 mb-1 flex gap-1.5 whitespace-nowrap items-center justify-center">
               <span>{{ format(parseISO(activeState.item.time), 'M/d') }}</span>
               <span>{{ format(parseISO(activeState.item.time), 'H') }}点</span>
-              <span class="text-gray-700 font-medium dark:text-gray-200">{{ getWeatherName(activeState.item.code) }}</span>
+              <span class="text-white font-medium">{{ getWeatherName(activeState.item.code) }}</span>
             </div>
 
             <!-- 第二行：温度 / 对比 -->
             <div class="flex gap-2 items-center justify-center">
-              <span class="text-2xl text-gray-800 leading-none tracking-tight font-bold dark:text-white">
+              <span class="text-2xl text-white leading-none tracking-tight font-bold">
                 {{ formatTemperature(activeState.item.temp) }}
               </span>
 
               <!-- 对比徽章 -->
               <div
                 v-if="activeState.item.tempDiff !== null"
-                class="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-gray-100 flex items-center dark:bg-gray-700/50"
+                class="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-white/15 flex items-center"
               >
-                <span v-if="Math.abs(Math.round(activeState.item.tempDiff)) === 0" class="text-gray-400">
+                <span v-if="Math.abs(Math.round(activeState.item.tempDiff)) === 0" class="text-white/50">
                   持平
                 </span>
                 <template v-else>
                   <div
                     class="i-carbon-arrow-up text-[10px] mr-0.5"
-                    :class="activeState.item.tempDiff > 0 ? 'text-orange-500 rotate-0' : 'text-blue-500 rotate-180'"
+                    :class="activeState.item.tempDiff > 0 ? 'text-orange-400 rotate-0' : 'text-blue-300 rotate-180'"
                   />
-                  <span :class="activeState.item.tempDiff > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-blue-600 dark:text-blue-400'">
+                  <span :class="activeState.item.tempDiff > 0 ? 'text-orange-300' : 'text-blue-300'">
                     {{ Math.abs(Math.round(activeState.item.tempDiff)) }}°
                   </span>
                 </template>
@@ -391,7 +421,7 @@ const activeState = computed(() => {
       <div class="flex h-full">
         <!-- 左侧固定标签列 -->
         <div
-          class="text-[10px] text-gray-400 font-medium flex flex-shrink-0 flex-col"
+          class="text-[10px] text-white/50 font-medium flex flex-shrink-0 flex-col"
           :style="{ width: `${LABEL_WIDTH}px` }"
         >
           <!-- 温度/趋势标签 - 动态高度 -->
@@ -430,17 +460,17 @@ const activeState = computed(() => {
                   <div
                     v-for="group in weatherGroups"
                     :key="group.id"
-                    class="pb-2 border-r border-gray-100/50 flex flex-col h-full transition-colors items-center justify-end last:border-0 dark:border-gray-700/50"
+                    class="pb-2 border-r border-white/10 flex flex-col h-full transition-colors items-center justify-end last:border-0"
                     :class="getWeatherBackgroundClass(group.data.code)"
                     :style="{ width: `${group.count * COLUMN_WIDTH}px` }"
                   >
                     <!-- 图标与文字：位于背景内部，受 clip-path 影响 -->
                     <!-- 由于我们预留了 CONTENT_HEIGHT，clip-path 不会切到这里 -->
                     <div class="mb-1 opacity-90 flex flex-col gap-1 items-center">
-                      <span class="text-[11px] text-gray-600 font-medium dark:text-gray-300">
+                      <span class="text-[11px] text-white/80 font-medium">
                         {{ getWeatherName(group.data.code) }}
                       </span>
-                      <div :class="getWeatherIcon(group.data.code, 1)" class="text-xl text-gray-700 dark:text-gray-200" />
+                      <div :class="getWeatherIcon(group.data.code, 1)" class="text-xl text-white/90" />
                     </div>
                   </div>
                 </div>
@@ -511,19 +541,19 @@ const activeState = computed(() => {
                   class="px-[1px] flex items-center justify-center"
                   :style="{ width: `${group.count * COLUMN_WIDTH}px` }"
                 >
-                  <div class="rounded bg-gray-100 flex gap-0.5 h-6 w-full items-center justify-center dark:bg-gray-800">
+                  <div class="rounded bg-white/15 flex gap-0.5 h-6 w-full items-center justify-center">
                     <div
-                      class="i-tabler-arrow-down text-xs text-gray-400"
+                      class="i-tabler-arrow-down text-xs text-white/60"
                       :style="{ transform: `rotate(${group.data.windDir}deg)` }"
                     />
-                    <span class="text-[10px] text-gray-600 font-medium whitespace-nowrap dark:text-gray-400">
+                    <span class="text-[10px] text-white/80 font-medium whitespace-nowrap">
                       {{ formatWindSpeed(group.data.windSpeed) }}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div class="mt-2 pt-2 border-t border-gray-100 flex w-full dark:border-gray-800">
+              <div class="mt-2 pt-2 border-t border-white/15 flex w-full">
                 <div
                   v-for="(item, index) in hourlyData"
                   :key="item.time"
@@ -539,8 +569,8 @@ const activeState = computed(() => {
                       class="font-medium whitespace-nowrap"
                       :class="[
                         index === 0 || hourOf(item.time) === 0
-                          ? 'text-primary font-bold'
-                          : 'text-gray-400',
+                          ? 'text-white font-bold'
+                          : 'text-white/50',
                       ]"
                     >
                       <template v-if="index === 0">现在</template>
@@ -559,7 +589,7 @@ const activeState = computed(() => {
         </div>
         <!-- 右侧固定标签列 -->
         <div
-          class="text-[10px] text-gray-400 font-medium flex flex-shrink-0 flex-col"
+          class="text-[10px] text-white/50 font-medium flex flex-shrink-0 flex-col"
           :style="{ width: `${LABEL_WIDTH}px` }"
         >
           <!-- 温度/趋势标签 - 动态高度 -->
@@ -594,7 +624,7 @@ const activeState = computed(() => {
   scrollbar-width: none;
 }
 
-/* 模拟雨滴：30度倾斜的细虚线 + 底部渐变背景 */
+/* 模拟雨滴：30度倾斜的细虚线 + 底部渐变背景 (适配玻璃拟态) */
 .weather-bg-rain {
   background-image:
     /* 上层：雨滴纹理 */
@@ -602,23 +632,10 @@ const activeState = computed(() => {
       120deg,
       transparent,
       transparent 6px,
-      rgba(59, 130, 246, 0.2) 6px,
-      rgba(59, 130, 246, 0.2) 7px
+      rgba(147, 197, 253, 0.25) 6px,
+      rgba(147, 197, 253, 0.25) 7px
     ),
     /* 下层：蓝色渐变 (从透明到淡蓝) */
-    linear-gradient(to top, transparent 0%, rgba(219, 234, 254, 0.7) 50%, rgba(219, 234, 254, 0.3) 100%);
-}
-
-/* 深色模式下的雨滴颜色调整 */
-:global(.dark) .weather-bg-rain {
-  background-image:
-    repeating-linear-gradient(
-      120deg,
-      transparent,
-      transparent 6px,
-      rgba(96, 165, 250, 0.2) 6px,
-      rgba(96, 165, 250, 0.2) 7px
-    ),
-    linear-gradient(to top, transparent 0%, rgba(30, 58, 138, 0.2) 50%, rgba(30, 58, 138, 0.1) 100%);
+    linear-gradient(to top, transparent 0%, rgba(96, 165, 250, 0.25) 50%, rgba(96, 165, 250, 0.12) 100%);
 }
 </style>

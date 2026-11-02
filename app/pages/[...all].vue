@@ -3,9 +3,9 @@ const router = useRouter()
 </script>
 
 <template>
-  <main class="text-gray-700 px-4 py-10 text-center dark:bg-gray-200">
+  <main class="text-white px-4 py-10 text-center">
     <div class="text-4xl">
-      <div class="i-carbon-warning text-primary inline-block" />
+      <div class="i-carbon-warning text-sky-300 inline-block" />
     </div>
     <div>Not found</div>
     <div>

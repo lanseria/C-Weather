@@ -27,7 +27,9 @@ export const useWeatherStore = defineStore('weather', () => {
     lat: hasValidQuery ? queryLat : DEFAULT_LOCATION.lat,
     lon: hasValidQuery ? queryLon : DEFAULT_LOCATION.lon,
     // 如果有 URL 坐标但没名字，显示 "自定义位置"，否则使用默认名字
-    name: hasValidQuery ? (queryName || 'Custom Location') : DEFAULT_LOCATION.name,
+    name: hasValidQuery
+      ? (queryName || 'Custom Location')
+      : DEFAULT_LOCATION.name,
   })
 
   const fetchWeather = async (lat?: number, lon?: number) => {

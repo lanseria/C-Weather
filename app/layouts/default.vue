@@ -2,7 +2,11 @@
 </script>
 
 <template>
-  <main class="text-gray-800 font-sans bg-gray-50 min-h-screen dark:text-gray-200 dark:bg-gray-900">
-    <slot />
+  <main class="text-white font-sans min-h-screen relative">
+    <!-- iOS 风格动态天气背景 -->
+    <WeatherBackground />
+    <div class="relative z-10">
+      <slot />
+    </div>
   </main>
 </template>
